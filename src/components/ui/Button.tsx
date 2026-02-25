@@ -7,16 +7,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary: 'bg-blue-500 hover:bg-blue-600 text-white',
-  secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-  ghost: 'hover:bg-gray-100 text-gray-600',
-  danger: 'bg-red-500 hover:bg-red-600 text-white',
+  primary: 'bg-[#007aff] hover:bg-[#0051d5] text-white shadow-sm hover:shadow-md',
+  secondary: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm',
+  ghost: 'hover:bg-gray-50 text-gray-600',
+  danger: 'bg-red-500 hover:bg-red-600 text-white shadow-sm hover:shadow-md',
 }
 
 const sizes = {
-  sm: 'px-2.5 py-1.5 text-xs',
-  md: 'px-3.5 py-2 text-sm',
-  lg: 'px-4 py-2.5 text-base',
+  sm: 'px-3 py-1.5 text-xs',
+  md: 'px-4 py-2 text-sm',
+  lg: 'px-5 py-2.5 text-base',
 }
 
 export default function Button({
@@ -28,7 +28,7 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center font-medium rounded-lg transition-colors disabled:opacity-50 cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 disabled:opacity-50 cursor-pointer tracking-tight ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}

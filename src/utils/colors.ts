@@ -1,16 +1,16 @@
 export const PROJECT_COLORS = [
-  '#3B82F6', // blue
-  '#EF4444', // red
-  '#10B981', // emerald
-  '#F59E0B', // amber
-  '#8B5CF6', // violet
-  '#EC4899', // pink
-  '#06B6D4', // cyan
-  '#F97316', // orange
-  '#14B8A6', // teal
-  '#6366F1', // indigo
-  '#84CC16', // lime
-  '#A855F7', // purple
+  '#A8C5E3', // soft blue
+  '#F7B5CA', // soft pink
+  '#B5E7A0', // soft green
+  '#FFD6A5', // soft peach
+  '#D4B5F7', // soft lavender
+  '#FFB3BA', // soft coral
+  '#B5F1E7', // soft mint
+  '#FFC9A8', // soft orange
+  '#A8E6CF', // soft aqua
+  '#C5B3E6', // soft purple
+  '#FFE5A8', // soft yellow
+  '#E6B5D8', // soft rose
 ]
 
 export function getContrastColor(hex: string): string {

@@ -34,8 +34,8 @@ export default function ProjectCard({
   return (
     <>
       <div
-        className={`rounded-lg border transition-colors ${
-          selected ? 'border-gray-400 bg-gray-50' : 'border-gray-200 bg-white hover:border-gray-300'
+        className={`rounded-xl border transition-all duration-200 ${
+          selected ? 'border-[#007aff] bg-blue-50/30 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
         }`}
       >
         {/* Header row */}
@@ -44,19 +44,19 @@ export default function ProjectCard({
           className="w-full flex items-center gap-3 p-3 text-left cursor-pointer"
         >
           <div
-            className="w-3 h-3 rounded-full shrink-0"
+            className="w-3 h-3 rounded-full shrink-0 ring-2 ring-white shadow-sm"
             style={{ backgroundColor: project.color }}
           />
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm text-gray-900 truncate">
+            <div className="font-semibold text-sm text-gray-900 truncate tracking-tight">
               {project.title}
             </div>
             {project.description && (
-              <div className="text-xs text-gray-500 truncate">{project.description}</div>
+              <div className="text-xs text-gray-500 truncate mt-0.5">{project.description}</div>
             )}
           </div>
           <span
-            className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0"
+            className="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 shadow-sm tracking-tight"
             style={{
               backgroundColor: project.color,
               color: getContrastColor(project.color),
@@ -67,31 +67,31 @@ export default function ProjectCard({
         </button>
 
         {/* Expand toggle */}
-        <div className="px-3 pb-1 flex gap-1">
+        <div className="px-3 pb-2 flex gap-1.5">
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+            className="text-xs font-medium text-gray-400 hover:text-[#007aff] cursor-pointer transition-colors tracking-tight"
           >
             {expanded ? 'Less' : 'More'}
           </button>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300">·</span>
           <button
             onClick={() => setSharing(true)}
-            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+            className="text-xs font-medium text-gray-400 hover:text-[#007aff] cursor-pointer transition-colors tracking-tight"
           >
             Share
           </button>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300">·</span>
           <button
             onClick={() => setEditing(true)}
-            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+            className="text-xs font-medium text-gray-400 hover:text-[#007aff] cursor-pointer transition-colors tracking-tight"
           >
             Edit
           </button>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300">·</span>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="text-xs text-gray-400 hover:text-red-500 cursor-pointer"
+            className="text-xs font-medium text-gray-400 hover:text-red-500 cursor-pointer transition-colors tracking-tight"
           >
             Delete
           </button>
@@ -119,13 +119,13 @@ export default function ProjectCard({
                   onDelete(project.id)
                   setConfirmDelete(false)
                 }}
-                className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
+                className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 cursor-pointer font-medium tracking-tight transition-colors shadow-sm"
               >
                 Delete
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 cursor-pointer"
+                className="text-xs px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 cursor-pointer font-medium tracking-tight transition-colors"
               >
                 Cancel
               </button>

@@ -34,8 +34,8 @@ export default function ProjectCardList({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Projects
         </h3>
         <Button size="sm" onClick={() => setCreating(true)}>

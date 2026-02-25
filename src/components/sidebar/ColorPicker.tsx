@@ -7,14 +7,14 @@ interface ColorPickerProps {
 
 export default function ColorPicker({ value, onChange }: ColorPickerProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2.5">
       {PROJECT_COLORS.map((color) => (
         <button
           key={color}
           type="button"
           onClick={() => onChange(color)}
-          className={`w-8 h-8 rounded-full border-2 transition-transform cursor-pointer ${
-            value === color ? 'border-gray-800 scale-110' : 'border-transparent hover:scale-105'
+          className={`w-9 h-9 rounded-full border-2 transition-all cursor-pointer shadow-sm ${
+            value === color ? 'border-[#007aff] scale-110 ring-2 ring-[#007aff]/20' : 'border-white hover:scale-105 hover:shadow-md'
           }`}
           style={{ backgroundColor: color }}
           aria-label={`Select color ${color}`}
