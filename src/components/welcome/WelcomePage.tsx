@@ -4,6 +4,7 @@ import { useUserContext } from '../../contexts/UserContext'
 
 export default function WelcomePage() {
   const [name, setName] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { setUser } = useUserContext()
@@ -15,6 +16,14 @@ export default function WelcomePage() {
     const trimmed = name.trim()
     if (!trimmed) {
       setError('Please enter your name')
+      return
+    }
+    if (!password) {
+      setError('Please enter the access password')
+      return
+    }
+    if (password !== import.meta.env.VITE_APP_PASSWORD) {
+      setError('Incorrect password')
       return
     }
     setSubmitting(true)
@@ -56,10 +65,28 @@ export default function WelcomePage() {
                 autoFocus
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-400"
               />
-              {error && (
-                <p className="mt-1 text-sm text-red-500">{error}</p>
-              )}
             </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Access Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-400"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
 
             <button
               type="submit"
