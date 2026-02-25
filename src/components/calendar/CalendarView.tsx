@@ -104,7 +104,12 @@ export default function CalendarView({
   }
 
   function renderEventContent(eventInfo: EventContentArg) {
-    const calEvent = eventInfo.event.extendedProps.calendarEvent as CalendarEvent
+    const calEvent = eventInfo.event.extendedProps.calendarEvent as CalendarEvent | undefined
+    if (!calEvent) {
+      // Fallback for events without full data
+      return <div className="p-1 text-xs">{eventInfo.event.title}</div>
+    }
+
     const assignees = calEvent.assignees || []
 
     return (
@@ -172,10 +177,20 @@ export default function CalendarView({
         eventResize={handleEventResize}
         slotMinTime="06:00:00"
         slotMaxTime="22:00:00"
+        slotDuration="00:15:00"
+        snapDuration="00:15:00"
+        selectMinDistance={5}
+        unselectAuto={true}
+        selectOverlap={false}
         allDaySlot
         eventDisplay="block"
         eventContent={renderEventContent}
-        longPressDelay={200}
+        longPressDelay={0}
+        selectLongPressDelay={0}
+        buttonIcons={{
+          prev: 'chevron-left',
+          next: 'chevron-right',
+        }}
       />
 
       {/* Create event modal */}

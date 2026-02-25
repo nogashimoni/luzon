@@ -17,11 +17,26 @@
 }
 
 .fc .fc-button {
-  padding: 0.375rem 0.75rem;
+  padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 0.375rem;
   text-transform: capitalize;
+  cursor: pointer;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.fc .fc-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.fc .fc-button:active {
+  transform: translateY(0);
 }
 
 .fc .fc-toolbar-title {
@@ -43,7 +58,36 @@
 }
 
 .fc .fc-timegrid-slot {
-  height: 3rem;
+  height: 2.5rem;
+}
+
+.fc .fc-timegrid-slot-label {
+  font-size: 0.75rem;
+}
+
+/* Enable drag selection */
+.fc .fc-timegrid-body {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.fc .fc-timegrid-slot-lane {
+  cursor: crosshair;
+}
+
+.fc .fc-timegrid-col.fc-day {
+  cursor: crosshair;
+}
+
+.fc .fc-highlight {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border: 2px dashed #3b82f6 !important;
+  opacity: 1 !important;
+}
+
+.fc-timegrid-slot:hover {
+  background: rgba(59, 130, 246, 0.05);
 }
 
 .fc .fc-timegrid-event {
