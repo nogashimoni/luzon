@@ -35,17 +35,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function setUser(name: string) {
+    // Only allow Amit or Kiper (hardcoded users)
+    const allowedNames = ['Amit', 'Kiper']
+    if (!allowedNames.includes(name)) {
+      throw new Error('Only Amit and Kiper are allowed to login')
+    }
+
+    // Find existing user by name (don't create new users)
     const { data, error } = await supabase
       .from('users')
-      .insert({ name })
-      .select()
+      .select('*')
+      .eq('name', name)
       .single()
 
-    if (error) throw error
-    if (data) {
-      localStorage.setItem(USER_STORAGE_KEY, data.id)
-      setUserState(data)
+    if (error || !data) {
+      throw new Error('User not found. Only Amit and Kiper can login.')
     }
+
+    localStorage.setItem(USER_STORAGE_KEY, data.id)
+    setUserState(data)
   }
 
   function logout() {

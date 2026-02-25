@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
+import Avatar from '../ui/Avatar'
 import type { Project } from '../../types'
 import { format } from 'date-fns'
+import { useUsers } from '../../hooks/useUsers'
 
 interface EventModalProps {
   open: boolean
@@ -14,6 +16,7 @@ interface EventModalProps {
     project_id: string | null
     all_day: boolean
     description?: string | null
+    assignee_user_ids?: string[]
   }) => Promise<void>
   onDelete?: () => Promise<void>
   projects: Project[]
@@ -25,6 +28,7 @@ interface EventModalProps {
     allDay?: boolean
     project_id?: string | null
     description?: string | null
+    assignee_user_ids?: string[]
   }
   selectedProjectId: string | null
 }
@@ -52,8 +56,22 @@ export default function EventModal({
   const [description, setDescription] = useState(initialData?.description ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
+    initialData?.assignee_user_ids ?? []
+  )
 
+  const { users } = useUsers()
   const isEditing = !!initialData?.id
+
+  function toggleUserSelection(userId: string) {
+    setSelectedUserIds(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId)
+      } else {
+        return [...prev, userId]
+      }
+    })
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -71,6 +89,7 @@ export default function EventModal({
         project_id: projectId || null,
         all_day: allDay,
         description: description.trim() || null,
+        assignee_user_ids: selectedUserIds,
       })
       onClose()
     } catch {
@@ -109,6 +128,24 @@ export default function EventModal({
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Assign to (select 1 or 2 users)
+          </label>
+          <div className="flex gap-3">
+            {users.map((user) => (
+              <Avatar
+                key={user.id}
+                user={user}
+                size="lg"
+                clickable
+                selected={selectedUserIds.includes(user.id)}
+                onClick={() => toggleUserSelection(user.id)}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
