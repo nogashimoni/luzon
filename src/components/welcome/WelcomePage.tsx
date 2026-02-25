@@ -1,0 +1,76 @@
+import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useUserContext } from '../../contexts/UserContext'
+
+export default function WelcomePage() {
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const { setUser } = useUserContext()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Please enter your name')
+      return
+    }
+    setSubmitting(true)
+    setError('')
+    try {
+      await setUser(trimmed)
+      const projectId = searchParams.get('project')
+      navigate(projectId ? `/?project=${projectId}` : '/')
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Luzon</h1>
+            <p className="text-gray-500">Track your project hours</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                What's your name?
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                autoFocus
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-400"
+              />
+              {error && (
+                <p className="mt-1 text-sm text-red-500">{error}</p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+            >
+              {submitting ? 'Setting up...' : 'Get Started'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
