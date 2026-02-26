@@ -18,9 +18,9 @@ interface ProjectCardListProps {
 }
 
 const STATUS_SECTIONS = [
-  { id: 'in_progress' as ProjectStatus, title: '🔨 בעבודה', titleEn: 'In Progress' },
-  { id: 'waiting_payment' as ProjectStatus, title: '⏳ מחכים לתשלום', titleEn: 'Waiting Payment' },
-  { id: 'completed' as ProjectStatus, title: '✅ סיימנו ושולמו', titleEn: 'Completed' },
+  { id: 'in_progress' as ProjectStatus, title: 'In Progress' },
+  { id: 'waiting_payment' as ProjectStatus, title: 'Waiting for Payment' },
+  { id: 'completed' as ProjectStatus, title: 'Completed & Paid' },
 ]
 
 export default function ProjectCardList({
