@@ -5,11 +5,14 @@ export interface User {
   created_at: string
 }
 
+export type ProjectStatus = 'in_progress' | 'waiting_payment' | 'completed'
+
 export interface Project {
   id: string
   title: string
   color: string
   description: string | null
+  status: ProjectStatus
   created_by: string
   created_at: string
   updated_at: string
