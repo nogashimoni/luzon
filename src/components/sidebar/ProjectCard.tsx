@@ -5,6 +5,7 @@ import { getContrastColor } from '../../utils/colors'
 import ProjectNotes from './ProjectNotes'
 import ProjectForm from './ProjectForm'
 import ChecklistModal from './ChecklistModal'
+import FinancialsModal from './FinancialsModal'
 
 interface ProjectCardProps {
   project: Project
@@ -26,6 +27,7 @@ export default function ProjectCard({
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [showChecklist, setShowChecklist] = useState(false)
+  const [showFinancials, setShowFinancials] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const projectEvents = events.filter((e) => e.project_id === project.id)
@@ -80,6 +82,13 @@ export default function ProjectCard({
             className="text-xs font-medium text-gray-400 hover:text-[#007aff] cursor-pointer transition-colors tracking-tight"
           >
             Checklist
+          </button>
+          <span className="text-gray-300">·</span>
+          <button
+            onClick={() => setShowFinancials(true)}
+            className="text-xs font-medium text-gray-400 hover:text-[#007aff] cursor-pointer transition-colors tracking-tight"
+          >
+            Financials
           </button>
           <span className="text-gray-300">·</span>
           <button
@@ -149,6 +158,13 @@ export default function ProjectCard({
       <ChecklistModal
         open={showChecklist}
         onClose={() => setShowChecklist(false)}
+        projectId={project.id}
+        projectTitle={project.title}
+      />
+
+      <FinancialsModal
+        open={showFinancials}
+        onClose={() => setShowFinancials(false)}
         projectId={project.id}
         projectTitle={project.title}
       />

@@ -37,6 +37,17 @@ export interface ChecklistItem {
   updated_at: string
 }
 
+export interface ProjectFinancials {
+  id: string
+  project_id: string
+  month: string // Format: YYYY-MM
+  income: number
+  expenses: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface EventAssignee {
   id: string
   event_id: string
