@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle with gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#007aff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0051d5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main circle -->
+  <circle cx="50" cy="50" r="45" fill="url(#grad)"/>
+
+  <!-- Clock face -->
+  <circle cx="50" cy="50" r="35" fill="white" opacity="0.2"/>
+
+  <!-- Clock hands -->
+  <!-- Hour hand -->
+  <line x1="50" y1="50" x2="50" y2="30" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <!-- Minute hand -->
+  <line x1="50" y1="50" x2="65" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Center dot -->
+  <circle cx="50" cy="50" r="4" fill="white"/>
+</svg>
