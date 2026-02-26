@@ -103,23 +103,23 @@ export default function EventModal({
     <Modal open={open} onClose={onClose} title={isEditing ? 'Edit Event' : 'New Event'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">Title</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Event title"
             autoFocus
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 transition-all"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">Project</label>
           <select
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 bg-white transition-all"
           >
             <option value="">No project</option>
             {projects.map((p) => (
@@ -131,7 +131,7 @@ export default function EventModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 tracking-tight">
             Assign to (select 1 or 2 users)
           </label>
           <div className="flex gap-3">
@@ -154,42 +154,42 @@ export default function EventModal({
             id="allDay"
             checked={allDay}
             onChange={(e) => setAllDay(e.target.checked)}
-            className="rounded border-gray-300"
+            className="rounded border-gray-300 text-[#007aff] focus:ring-[#007aff]"
           />
-          <label htmlFor="allDay" className="text-sm text-gray-700">All day</label>
+          <label htmlFor="allDay" className="text-sm font-medium text-gray-700 tracking-tight">All day</label>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">Start</label>
             <input
               type={allDay ? 'date' : 'datetime-local'}
               value={allDay ? startDate.split('T')[0] : startDate}
               onChange={(e) => setStartDate(allDay ? `${e.target.value}T00:00` : e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 text-sm"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 text-sm transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">End</label>
             <input
               type={allDay ? 'date' : 'datetime-local'}
               value={allDay ? endDate.split('T')[0] : endDate}
               onChange={(e) => setEndDate(allDay ? `${e.target.value}T23:59` : e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 text-sm"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 text-sm transition-all"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">
             Description (optional)
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Event details..."
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 resize-none"
+            rows={3}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 resize-none transition-all"
           />
         </div>
 

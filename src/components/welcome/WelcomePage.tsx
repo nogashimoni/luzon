@@ -42,26 +42,26 @@ export default function WelcomePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Luzon</h1>
-            <p className="text-gray-500">Track your project hours</p>
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Luzon</h1>
+            <p className="text-gray-500 font-medium tracking-tight">Track your project hours</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-semibold text-gray-700 mb-2 tracking-tight"
               >
-                Select your name
+                Who are you?
               </label>
               <select
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoFocus
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 bg-white transition-all font-medium"
               >
                 <option value="">-- Select --</option>
                 <option value="Amit">Amit</option>
@@ -72,7 +72,7 @@ export default function WelcomePage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-semibold text-gray-700 mb-2 tracking-tight"
               >
                 Access Password
               </label>
@@ -82,18 +82,18 @@ export default function WelcomePage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-400"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 placeholder-gray-400 transition-all"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-500">{error}</p>
+              <p className="text-sm text-red-500 font-medium">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
+              className="w-full py-3.5 px-4 bg-[#007aff] hover:bg-[#0051d5] disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-sm hover:shadow-md tracking-tight"
             >
               {submitting ? 'Setting up...' : 'Get Started'}
             </button>

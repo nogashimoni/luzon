@@ -41,7 +41,7 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
     <Modal open={open} onClose={onClose} title={initialData ? 'Edit Project' : 'New Project'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">
             Project Name
           </label>
           <input
@@ -50,27 +50,27 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Kitchen Renovation"
             autoFocus
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 transition-all"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 mb-2.5 tracking-tight">
             Color
           </label>
           <ColorPicker value={color} onChange={setColor} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">
             Description (optional)
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief project description..."
-            rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 resize-none"
+            rows={3}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 resize-none transition-all"
           />
         </div>
 
