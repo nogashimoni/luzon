@@ -4,7 +4,7 @@ import { calculateProjectHours, formatHours } from '../../utils/hours'
 import { getContrastColor } from '../../utils/colors'
 import ProjectNotes from './ProjectNotes'
 import ProjectForm from './ProjectForm'
-import ShareModal from './ShareModal'
+import ChecklistModal from './ChecklistModal'
 
 interface ProjectCardProps {
   project: Project
@@ -25,7 +25,7 @@ export default function ProjectCard({
 }: ProjectCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [sharing, setSharing] = useState(false)
+  const [showChecklist, setShowChecklist] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const projectEvents = events.filter((e) => e.project_id === project.id)
@@ -76,10 +76,10 @@ export default function ProjectCard({
           </button>
           <span className="text-gray-300">·</span>
           <button
-            onClick={() => setSharing(true)}
+            onClick={() => setShowChecklist(true)}
             className="text-xs font-medium text-gray-400 hover:text-[#007aff] cursor-pointer transition-colors tracking-tight"
           >
-            Share
+            Checklist
           </button>
           <span className="text-gray-300">·</span>
           <button
@@ -146,9 +146,9 @@ export default function ProjectCard({
         />
       )}
 
-      <ShareModal
-        open={sharing}
-        onClose={() => setSharing(false)}
+      <ChecklistModal
+        open={showChecklist}
+        onClose={() => setShowChecklist(false)}
         projectId={project.id}
         projectTitle={project.title}
       />

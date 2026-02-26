@@ -27,6 +27,16 @@ export interface ProjectNote {
   updated_at: string
 }
 
+export interface ChecklistItem {
+  id: string
+  project_id: string
+  text: string
+  completed: boolean
+  item_order: number
+  created_at: string
+  updated_at: string
+}
+
 export interface EventAssignee {
   id: string
   event_id: string
