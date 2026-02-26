@@ -129,9 +129,12 @@ export default function FinancialsModal({ open, onClose, projectId, projectTitle
 
   return (
     <Modal open={open} onClose={onClose} title={`${projectTitle} - Financials`}>
-      <div className="space-y-4">
-        {/* Month navigation */}
-        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
+      {loading ? (
+        <div className="text-center py-8 text-gray-400">Loading...</div>
+      ) : (
+        <div className="space-y-4">
+          {/* Month navigation */}
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
           <button
             onClick={previousMonth}
             className="p-2 hover:bg-white rounded-lg transition-colors"
@@ -267,6 +270,7 @@ export default function FinancialsModal({ open, onClose, projectId, projectTitle
           </Button>
         </div>
       </div>
+      )}
     </Modal>
   )
 }
