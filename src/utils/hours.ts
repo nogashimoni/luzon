@@ -1,6 +1,8 @@
 import type { CalendarEvent } from '../types'
 
 export function calculateEventHours(event: CalendarEvent): number {
+  if (event.exclude_from_hours) return 0
+
   const start = new Date(event.start_time)
   const end = new Date(event.end_time)
   const diffMs = end.getTime() - start.getTime()
@@ -18,6 +20,8 @@ export function calculateProjectHours(events: CalendarEvent[]): number {
 // Calculate total user-hours for a project (sum of all user assignments)
 export function calculateProjectUserHours(events: CalendarEvent[]): number {
   return events.reduce((total, event) => {
+    if (event.exclude_from_hours) return total
+
     const start = new Date(event.start_time)
     const end = new Date(event.end_time)
     const diffMs = end.getTime() - start.getTime()
@@ -30,6 +34,8 @@ export function calculateProjectUserHours(events: CalendarEvent[]): number {
 // Calculate hours for a specific user across events
 export function calculateUserHours(events: CalendarEvent[], userId: string): number {
   return events.reduce((total, event) => {
+    if (event.exclude_from_hours) return total
+
     // Check if user is assigned to this event
     const isAssigned = event.assignees?.some(assignee => assignee.user_id === userId) ||
                        event.user_id === userId // Backwards compatibility
