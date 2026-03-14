@@ -32,6 +32,7 @@ interface CalendarViewProps {
     }
   ) => Promise<void>
   onDeleteEvent: (id: string) => Promise<void>
+  onCreateProject: (project: { title: string; color: string; description?: string; created_by: string }) => Promise<Project>
 }
 
 export default function CalendarView({
@@ -42,6 +43,7 @@ export default function CalendarView({
   onCreateEvent,
   onUpdateEvent,
   onDeleteEvent,
+  onCreateProject,
 }: CalendarViewProps) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [creating, setCreating] = useState<{ start: Date; end: Date; allDay: boolean } | null>(null)
@@ -201,6 +203,8 @@ export default function CalendarView({
           onClose={() => setCreating(null)}
           projects={projects}
           selectedProjectId={selectedProjectId}
+          userId={userId}
+          onCreateProject={onCreateProject}
           initialData={{
             start: creating.start,
             end: creating.end,
@@ -230,6 +234,8 @@ export default function CalendarView({
           onClose={() => setEditing(null)}
           projects={projects}
           selectedProjectId={selectedProjectId}
+          userId={userId}
+          onCreateProject={onCreateProject}
           initialData={{
             id: editing.id,
             title: editing.title,

@@ -63,6 +63,7 @@ export default function AppLayout() {
             onCreateEvent={createEvent}
             onUpdateEvent={updateEvent}
             onDeleteEvent={deleteEvent}
+            onCreateProject={createProject}
           />
         </main>
       </div>

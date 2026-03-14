@@ -5,6 +5,7 @@ import Avatar from '../ui/Avatar'
 import type { Project } from '../../types'
 import { format } from 'date-fns'
 import { useUsers } from '../../hooks/useUsers'
+import { PROJECT_COLORS } from '../../utils/colors'
 
 interface EventModalProps {
   open: boolean
@@ -19,6 +20,7 @@ interface EventModalProps {
     assignee_user_ids?: string[]
   }) => Promise<void>
   onDelete?: () => Promise<void>
+  onCreateProject?: (project: { title: string; color: string; description?: string; created_by: string }) => Promise<Project>
   projects: Project[]
   initialData?: {
     id?: string
@@ -31,6 +33,7 @@ interface EventModalProps {
     assignee_user_ids?: string[]
   }
   selectedProjectId: string | null
+  userId: string
 }
 
 export default function EventModal({
@@ -38,9 +41,11 @@ export default function EventModal({
   onClose,
   onSubmit,
   onDelete,
+  onCreateProject,
   projects,
   initialData,
   selectedProjectId,
+  userId,
 }: EventModalProps) {
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [startDate, setStartDate] = useState(
@@ -60,8 +65,39 @@ export default function EventModal({
     initialData?.assignee_user_ids ?? []
   )
 
+  const [creatingProject, setCreatingProject] = useState(false)
+  const [newProjectTitle, setNewProjectTitle] = useState('')
+  const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
+  const [creatingProjectLoading, setCreatingProjectLoading] = useState(false)
+  const [newProjectError, setNewProjectError] = useState('')
+
   const { users } = useUsers()
   const isEditing = !!initialData?.id
+
+  async function handleCreateProject() {
+    if (!newProjectTitle.trim()) {
+      setNewProjectError('Project name is required')
+      return
+    }
+    if (!onCreateProject) return
+    setCreatingProjectLoading(true)
+    setNewProjectError('')
+    try {
+      const newProject = await onCreateProject({
+        title: newProjectTitle.trim(),
+        color: newProjectColor,
+        created_by: userId,
+      })
+      setProjectId(newProject.id)
+      setCreatingProject(false)
+      setNewProjectTitle('')
+      setNewProjectColor(PROJECT_COLORS[0])
+    } catch {
+      setNewProjectError('Failed to create project')
+    } finally {
+      setCreatingProjectLoading(false)
+    }
+  }
 
   function toggleUserSelection(userId: string) {
     setSelectedUserIds(prev => {
@@ -116,18 +152,73 @@ export default function EventModal({
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">Project</label>
-          <select
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 bg-white transition-all"
-          >
-            <option value="">No project</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
+          {!creatingProject ? (
+            <div className="flex gap-2">
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 bg-white transition-all"
+              >
+                <option value="">No project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+              {onCreateProject && (
+                <button
+                  type="button"
+                  onClick={() => setCreatingProject(true)}
+                  className="px-3 py-2.5 border border-gray-200 rounded-xl text-[#007aff] hover:bg-[#007aff]/5 transition-all text-sm font-medium whitespace-nowrap"
+                >
+                  + New
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="border border-gray-200 rounded-xl p-3 space-y-3">
+              <input
+                type="text"
+                value={newProjectTitle}
+                onChange={(e) => setNewProjectTitle(e.target.value)}
+                placeholder="Project name"
+                autoFocus
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-sm text-gray-900 transition-all"
+              />
+              <div className="flex flex-wrap gap-2">
+                {PROJECT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewProjectColor(color)}
+                    className={`w-7 h-7 rounded-full border-2 transition-all ${
+                      newProjectColor === color ? 'border-[#007aff] scale-110 ring-2 ring-[#007aff]/20' : 'border-white hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              {newProjectError && <p className="text-xs text-red-500">{newProjectError}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setCreatingProject(false); setNewProjectTitle(''); setNewProjectError('') }}
+                  className="flex-1 py-1.5 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateProject}
+                  disabled={creatingProjectLoading}
+                  className="flex-1 py-1.5 text-sm text-white bg-[#007aff] rounded-lg hover:bg-[#0051d5] disabled:opacity-50 transition-all"
+                >
+                  {creatingProjectLoading ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
