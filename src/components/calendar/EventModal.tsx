@@ -6,6 +6,7 @@ import type { Project } from '../../types'
 import { format } from 'date-fns'
 import { useUsers } from '../../hooks/useUsers'
 import { PROJECT_COLORS } from '../../utils/colors'
+import ColorWheelPicker from '../ui/ColorWheelPicker'
 
 interface EventModalProps {
   open: boolean
@@ -186,19 +187,7 @@ export default function EventModal({
                 autoFocus
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-sm text-gray-900 transition-all"
               />
-              <div className="flex flex-wrap gap-2">
-                {PROJECT_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setNewProjectColor(color)}
-                    className={`w-7 h-7 rounded-full border-2 transition-all ${
-                      newProjectColor === color ? 'border-[#007aff] scale-110 ring-2 ring-[#007aff]/20' : 'border-white hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
+              <ColorWheelPicker value={newProjectColor} onChange={setNewProjectColor} />
               {newProjectError && <p className="text-xs text-red-500">{newProjectError}</p>}
               <div className="flex gap-2">
                 <button
