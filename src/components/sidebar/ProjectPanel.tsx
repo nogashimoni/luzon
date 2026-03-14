@@ -14,7 +14,7 @@ interface ProjectPanelProps {
   project: Project
   events: CalendarEvent[]
   onClose: () => void
-  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'deadline' | 'sort_order'>>) => Promise<void>
+  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 

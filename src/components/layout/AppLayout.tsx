@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import ProjectCardList from '../sidebar/ProjectCardList'
+import CommandBar from '../sidebar/CommandBar'
 import CalendarView from '../calendar/CalendarView'
 import { useProjects } from '../../hooks/useProjects'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents'
@@ -37,7 +38,11 @@ export default function AppLayout() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+        <Sidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          footer={<CommandBar projects={projects} onUpdateProject={updateProject} userId={user?.id ?? ''} />}
+        >
           <ProjectCardList
             projects={projects}
             events={events}

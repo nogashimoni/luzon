@@ -4,9 +4,10 @@ interface SidebarProps {
   open: boolean
   onClose: () => void
   children: ReactNode
+  footer?: ReactNode
 }
 
-export default function Sidebar({ open, onClose, children }: SidebarProps) {
+export default function Sidebar({ open, onClose, children, footer }: SidebarProps) {
   return (
     <>
       {/* Mobile overlay */}
@@ -36,6 +37,7 @@ export default function Sidebar({ open, onClose, children }: SidebarProps) {
         <div className="flex-1 overflow-y-auto p-4">
           {children}
         </div>
+        {footer}
       </aside>
     </>
   )
