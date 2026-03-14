@@ -211,7 +211,7 @@ export default function FinancialsModal({ open, onClose, projectId, projectTitle
         <div className={`p-4 rounded-xl ${profit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
           <div className="text-sm text-gray-600 mb-1">This Month's Profit</div>
           <div className={`text-2xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ${profit.toFixed(2)}
+            ₪{profit.toFixed(2)}
           </div>
         </div>
 
@@ -222,16 +222,16 @@ export default function FinancialsModal({ open, onClose, projectId, projectTitle
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-blue-50 p-3 rounded-lg">
                 <div className="text-xs text-gray-600 mb-1">Total Income</div>
-                <div className="text-lg font-bold text-blue-600">${totalIncome.toFixed(2)}</div>
+                <div className="text-lg font-bold text-blue-600">₪{totalIncome.toFixed(2)}</div>
               </div>
               <div className="bg-orange-50 p-3 rounded-lg">
                 <div className="text-xs text-gray-600 mb-1">Total Expenses</div>
-                <div className="text-lg font-bold text-orange-600">${totalExpenses.toFixed(2)}</div>
+                <div className="text-lg font-bold text-orange-600">₪{totalExpenses.toFixed(2)}</div>
               </div>
               <div className={`p-3 rounded-lg ${totalProfit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
                 <div className="text-xs text-gray-600 mb-1">Total Profit</div>
                 <div className={`text-lg font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  ${totalProfit.toFixed(2)}
+                  ₪{totalProfit.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -254,7 +254,7 @@ export default function FinancialsModal({ open, onClose, projectId, projectTitle
                       {formatMonthDisplay(monthData.month)}
                     </span>
                     <span className={`text-sm font-bold ${monthProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${monthProfit.toFixed(2)}
+                      ₪{monthProfit.toFixed(2)}
                     </span>
                   </button>
                 )
