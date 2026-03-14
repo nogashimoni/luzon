@@ -12,7 +12,7 @@ interface ProjectCardListProps {
   loading: boolean
   selectedProjectId: string | null
   onSelectProject: (id: string) => void
-  onCreateProject: (data: { title: string; color: string; description?: string; deadline?: string; created_by: string }) => Promise<Project>
+  onCreateProject: (data: { title: string; color: string; description?: string; deadline?: string | null; created_by: string }) => Promise<Project>
   onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'deadline' | 'sort_order'>>) => Promise<void>
   onDeleteProject: (id: string) => Promise<void>
   userId: string
