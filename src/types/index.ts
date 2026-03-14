@@ -13,6 +13,8 @@ export interface Project {
   color: string
   description: string | null
   status: ProjectStatus
+  deadline: string | null
+  sort_order: number | null
   created_by: string
   created_at: string
   updated_at: string

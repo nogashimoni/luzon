@@ -33,7 +33,7 @@ interface CalendarViewProps {
     }
   ) => Promise<void>
   onDeleteEvent: (id: string) => Promise<void>
-  onCreateProject: (project: { title: string; color: string; description?: string; created_by: string }) => Promise<Project>
+  onCreateProject: (project: { title: string; color: string; description?: string; deadline?: string; created_by: string }) => Promise<Project>
 }
 
 export default function CalendarView({

@@ -11,8 +11,8 @@ interface ProjectCardListProps {
   loading: boolean
   selectedProjectId: string | null
   onSelectProject: (id: string) => void
-  onCreateProject: (data: { title: string; color: string; description?: string; created_by: string }) => Promise<Project>
-  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status'>>) => Promise<void>
+  onCreateProject: (data: { title: string; color: string; description?: string; deadline?: string; created_by: string }) => Promise<Project>
+  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'deadline' | 'sort_order'>>) => Promise<void>
   onDeleteProject: (id: string) => Promise<void>
   userId: string
 }
@@ -22,6 +22,25 @@ const STATUS_SECTIONS = [
   { id: 'waiting_payment' as ProjectStatus, title: 'Waiting for Payment' },
   { id: 'completed' as ProjectStatus, title: 'Completed & Paid' },
 ]
+
+function sortProjectsInSection(projects: Project[]): Project[] {
+  const hasManualOrder = projects.some((p) => p.sort_order !== null)
+  if (hasManualOrder) {
+    return [...projects].sort((a, b) => {
+      if (a.sort_order === null && b.sort_order === null) return 0
+      if (a.sort_order === null) return 1
+      if (b.sort_order === null) return -1
+      return a.sort_order - b.sort_order
+    })
+  }
+  // Auto-sort by deadline (closest first, nulls last)
+  return [...projects].sort((a, b) => {
+    if (!a.deadline && !b.deadline) return 0
+    if (!a.deadline) return 1
+    if (!b.deadline) return -1
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+  })
+}
 
 export default function ProjectCardList({
   projects,
@@ -35,28 +54,70 @@ export default function ProjectCardList({
   userId,
 }: ProjectCardListProps) {
   const [creating, setCreating] = useState(false)
-  const [draggedProject, setDraggedProject] = useState<string | null>(null)
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null)
+  const [draggedFromSection, setDraggedFromSection] = useState<ProjectStatus | null>(null)
+  const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
 
   if (loading) return <LoadingSpinner />
 
-  const projectsByStatus = STATUS_SECTIONS.map(section => ({
+  const projectsByStatus = STATUS_SECTIONS.map((section) => ({
     ...section,
-    projects: projects.filter(p => (p.status || 'in_progress') === section.id)
+    projects: sortProjectsInSection(
+      projects.filter((p) => (p.status || 'in_progress') === section.id)
+    ),
   }))
 
-  function handleDragStart(projectId: string) {
-    setDraggedProject(projectId)
+  function handleDragStart(projectId: string, sectionId: ProjectStatus) {
+    setDraggedProjectId(projectId)
+    setDraggedFromSection(sectionId)
   }
 
   function handleDragEnd() {
-    setDraggedProject(null)
+    setDraggedProjectId(null)
+    setDraggedFromSection(null)
+    setDragOverProjectId(null)
   }
 
-  async function handleDrop(status: ProjectStatus) {
-    if (draggedProject) {
-      await onUpdateProject(draggedProject, { status })
-      setDraggedProject(null)
+  function handleDragOverProject(e: React.DragEvent, projectId: string) {
+    e.preventDefault()
+    if (projectId !== draggedProjectId) {
+      setDragOverProjectId(projectId)
     }
+  }
+
+  function handleDragLeaveProject() {
+    setDragOverProjectId(null)
+  }
+
+  async function handleDropOnProject(targetProjectId: string, targetSectionId: ProjectStatus) {
+    if (!draggedProjectId || draggedProjectId === targetProjectId) return
+
+    if (draggedFromSection === targetSectionId) {
+      // Reorder within same section
+      const sectionProjects = projectsByStatus.find((s) => s.id === targetSectionId)?.projects ?? []
+      const reordered = [...sectionProjects]
+      const fromIndex = reordered.findIndex((p) => p.id === draggedProjectId)
+      const toIndex = reordered.findIndex((p) => p.id === targetProjectId)
+      if (fromIndex === -1 || toIndex === -1) return
+      const [moved] = reordered.splice(fromIndex, 1)
+      reordered.splice(toIndex, 0, moved)
+      await Promise.all(
+        reordered.map((p, i) => onUpdateProject(p.id, { sort_order: i + 1 }))
+      )
+    } else {
+      // Move to different section (change status)
+      await onUpdateProject(draggedProjectId, { status: targetSectionId })
+    }
+    handleDragEnd()
+  }
+
+  async function handleDropOnSection(sectionId: ProjectStatus) {
+    if (!draggedProjectId) return
+    if (dragOverProjectId) return // handled by handleDropOnProject
+    if (draggedFromSection !== sectionId) {
+      await onUpdateProject(draggedProjectId, { status: sectionId })
+    }
+    handleDragEnd()
   }
 
   function handleDragOver(e: React.DragEvent) {
@@ -85,7 +146,7 @@ export default function ProjectCardList({
         <div
           key={section.id}
           className="space-y-2"
-          onDrop={() => handleDrop(section.id)}
+          onDrop={() => handleDropOnSection(section.id)}
           onDragOver={handleDragOver}
         >
           <h4 className="text-xs font-semibold text-gray-600 px-2 py-1 bg-gray-50 rounded-lg">
@@ -102,9 +163,18 @@ export default function ProjectCardList({
                 <div
                   key={project.id}
                   draggable
-                  onDragStart={() => handleDragStart(project.id)}
+                  onDragStart={() => handleDragStart(project.id, section.id)}
                   onDragEnd={handleDragEnd}
-                  className={`cursor-move ${draggedProject === project.id ? 'opacity-50' : ''}`}
+                  onDragOver={(e) => handleDragOverProject(e, project.id)}
+                  onDragLeave={handleDragLeaveProject}
+                  onDrop={() => handleDropOnProject(project.id, section.id)}
+                  className={`cursor-move transition-all ${
+                    draggedProjectId === project.id ? 'opacity-40' : ''
+                  } ${
+                    dragOverProjectId === project.id && draggedProjectId !== project.id
+                      ? 'ring-2 ring-[#007aff] ring-offset-1 rounded-xl'
+                      : ''
+                  }`}
                 >
                   <ProjectCard
                     project={project}

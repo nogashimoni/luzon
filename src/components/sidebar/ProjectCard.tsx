@@ -12,8 +12,25 @@ interface ProjectCardProps {
   events: CalendarEvent[]
   selected: boolean
   onSelect: () => void
-  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description'>>) => Promise<void>
+  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'deadline'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
+}
+
+function formatDeadline(deadline: string): { label: string; color: string } {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const d = new Date(deadline + 'T00:00:00')
+  const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  let label: string
+  if (diffDays < 0) label = `${Math.abs(diffDays)}d overdue`
+  else if (diffDays === 0) label = 'Due today'
+  else if (diffDays === 1) label = 'Due tomorrow'
+  else if (diffDays <= 7) label = `${diffDays}d left`
+  else label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+
+  const color = diffDays < 0 ? 'text-red-500' : diffDays <= 3 ? 'text-orange-500' : 'text-gray-400'
+  return { label, color }
 }
 
 export default function ProjectCard({
@@ -56,6 +73,10 @@ export default function ProjectCard({
             {project.description && (
               <div className="text-xs text-gray-500 truncate mt-0.5">{project.description}</div>
             )}
+            {project.deadline && (() => {
+              const { label, color } = formatDeadline(project.deadline)
+              return <div className={`text-xs font-medium mt-0.5 ${color}`}>{label}</div>
+            })()}
           </div>
           <span
             className="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 shadow-sm tracking-tight"
