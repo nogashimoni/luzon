@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Project, CalendarEvent, ProjectStatus } from '../../types'
 import ProjectCard from './ProjectCard'
+import ProjectPanel from './ProjectPanel'
 import ProjectForm from './ProjectForm'
 import Button from '../ui/Button'
 import LoadingSpinner from '../ui/LoadingSpinner'
@@ -33,7 +34,6 @@ function sortProjectsInSection(projects: Project[]): Project[] {
       return a.sort_order - b.sort_order
     })
   }
-  // Auto-sort by deadline (closest first, nulls last)
   return [...projects].sort((a, b) => {
     if (!a.deadline && !b.deadline) return 0
     if (!a.deadline) return 1
@@ -54,11 +54,14 @@ export default function ProjectCardList({
   userId,
 }: ProjectCardListProps) {
   const [creating, setCreating] = useState(false)
+  const [panelProjectId, setPanelProjectId] = useState<string | null>(null)
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null)
   const [draggedFromSection, setDraggedFromSection] = useState<ProjectStatus | null>(null)
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
 
   if (loading) return <LoadingSpinner />
+
+  const panelProject = panelProjectId ? projects.find((p) => p.id === panelProjectId) ?? null : null
 
   const projectsByStatus = STATUS_SECTIONS.map((section) => ({
     ...section,
@@ -78,22 +81,10 @@ export default function ProjectCardList({
     setDragOverProjectId(null)
   }
 
-  function handleDragOverProject(e: React.DragEvent, projectId: string) {
-    e.preventDefault()
-    if (projectId !== draggedProjectId) {
-      setDragOverProjectId(projectId)
-    }
-  }
-
-  function handleDragLeaveProject() {
-    setDragOverProjectId(null)
-  }
-
   async function handleDropOnProject(targetProjectId: string, targetSectionId: ProjectStatus) {
     if (!draggedProjectId || draggedProjectId === targetProjectId) return
 
     if (draggedFromSection === targetSectionId) {
-      // Reorder within same section
       const sectionProjects = projectsByStatus.find((s) => s.id === targetSectionId)?.projects ?? []
       const reordered = [...sectionProjects]
       const fromIndex = reordered.findIndex((p) => p.id === draggedProjectId)
@@ -101,11 +92,8 @@ export default function ProjectCardList({
       if (fromIndex === -1 || toIndex === -1) return
       const [moved] = reordered.splice(fromIndex, 1)
       reordered.splice(toIndex, 0, moved)
-      await Promise.all(
-        reordered.map((p, i) => onUpdateProject(p.id, { sort_order: i + 1 }))
-      )
+      await Promise.all(reordered.map((p, i) => onUpdateProject(p.id, { sort_order: i + 1 })))
     } else {
-      // Move to different section (change status)
       await onUpdateProject(draggedProjectId, { status: targetSectionId })
     }
     handleDragEnd()
@@ -113,26 +101,18 @@ export default function ProjectCardList({
 
   async function handleDropOnSection(sectionId: ProjectStatus) {
     if (!draggedProjectId) return
-    if (dragOverProjectId) return // handled by handleDropOnProject
+    if (dragOverProjectId) return
     if (draggedFromSection !== sectionId) {
       await onUpdateProject(draggedProjectId, { status: sectionId })
     }
     handleDragEnd()
   }
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Projects
-        </h3>
-        <Button size="sm" onClick={() => setCreating(true)}>
-          + New
-        </Button>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Projects</h3>
+        <Button size="sm" onClick={() => setCreating(true)}>+ New</Button>
       </div>
 
       {projects.length === 0 && (
@@ -147,13 +127,12 @@ export default function ProjectCardList({
           key={section.id}
           className="space-y-2"
           onDrop={() => handleDropOnSection(section.id)}
-          onDragOver={handleDragOver}
+          onDragOver={(e) => e.preventDefault()}
         >
           <h4 className="text-xs font-semibold text-gray-600 px-2 py-1 bg-gray-50 rounded-lg">
             {section.title}
           </h4>
-
-          <div className="space-y-2 min-h-[60px] rounded-lg transition-colors">
+          <div className="space-y-2 min-h-[60px] rounded-lg">
             {section.projects.length === 0 ? (
               <div className="text-center py-4 text-xs text-gray-400 bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
                 Drag projects here
@@ -165,8 +144,8 @@ export default function ProjectCardList({
                   draggable
                   onDragStart={() => handleDragStart(project.id, section.id)}
                   onDragEnd={handleDragEnd}
-                  onDragOver={(e) => handleDragOverProject(e, project.id)}
-                  onDragLeave={handleDragLeaveProject}
+                  onDragOver={(e) => { e.preventDefault(); if (project.id !== draggedProjectId) setDragOverProjectId(project.id) }}
+                  onDragLeave={() => setDragOverProjectId(null)}
                   onDrop={() => handleDropOnProject(project.id, section.id)}
                   className={`cursor-move transition-all ${
                     draggedProjectId === project.id ? 'opacity-40' : ''
@@ -181,8 +160,7 @@ export default function ProjectCardList({
                     events={events}
                     selected={project.id === selectedProjectId}
                     onSelect={() => onSelectProject(project.id)}
-                    onUpdate={onUpdateProject}
-                    onDelete={onDeleteProject}
+                    onOpenPanel={() => setPanelProjectId(project.id)}
                   />
                 </div>
               ))
@@ -195,9 +173,17 @@ export default function ProjectCardList({
         <ProjectForm
           open={creating}
           onClose={() => setCreating(false)}
-          onSubmit={async (data) => {
-            await onCreateProject({ ...data, created_by: userId })
-          }}
+          onSubmit={async (data) => { await onCreateProject({ ...data, created_by: userId }) }}
+        />
+      )}
+
+      {panelProject && (
+        <ProjectPanel
+          project={panelProject}
+          events={events}
+          onClose={() => setPanelProjectId(null)}
+          onUpdate={onUpdateProject}
+          onDelete={onDeleteProject}
         />
       )}
     </div>
