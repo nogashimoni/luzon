@@ -65,6 +65,7 @@ export interface CalendarEvent {
   start_time: string
   end_time: string
   all_day: boolean
+  exclude_from_hours: boolean
   color: string | null
   created_at: string
   updated_at: string

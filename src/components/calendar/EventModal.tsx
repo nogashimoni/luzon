@@ -17,6 +17,7 @@ interface EventModalProps {
     end_time: string
     project_id: string | null
     all_day: boolean
+    exclude_from_hours: boolean
     description?: string | null
     assignee_user_ids?: string[]
   }) => Promise<void>
@@ -29,6 +30,7 @@ interface EventModalProps {
     start: Date
     end: Date
     allDay?: boolean
+    exclude_from_hours?: boolean
     project_id?: string | null
     description?: string | null
     assignee_user_ids?: string[]
@@ -59,6 +61,7 @@ export default function EventModal({
     initialData?.project_id ?? selectedProjectId ?? ''
   )
   const [allDay, setAllDay] = useState(initialData?.allDay ?? false)
+  const [excludeFromHours, setExcludeFromHours] = useState(initialData?.exclude_from_hours ?? false)
   const [description, setDescription] = useState(initialData?.description ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -125,6 +128,7 @@ export default function EventModal({
         end_time: new Date(endDate).toISOString(),
         project_id: projectId || null,
         all_day: allDay,
+        exclude_from_hours: excludeFromHours,
         description: description.trim() || null,
         assignee_user_ids: selectedUserIds,
       })
@@ -237,6 +241,17 @@ export default function EventModal({
             className="rounded border-gray-300 text-[#007aff] focus:ring-[#007aff]"
           />
           <label htmlFor="allDay" className="text-sm font-medium text-gray-700 tracking-tight">All day</label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="excludeFromHours"
+            checked={excludeFromHours}
+            onChange={(e) => setExcludeFromHours(e.target.checked)}
+            className="rounded border-gray-300 focus:ring-gray-400"
+          />
+          <label htmlFor="excludeFromHours" className="text-sm font-medium text-gray-700 tracking-tight">Don't count hours</label>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

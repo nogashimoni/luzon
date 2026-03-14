@@ -62,8 +62,9 @@ export function useCalendarEvents() {
     end_time: string
     project_id?: string | null
     user_id: string
-    assignee_user_ids?: string[] // New: array of user IDs to assign
+    assignee_user_ids?: string[]
     all_day?: boolean
+    exclude_from_hours?: boolean
     color?: string | null
     description?: string | null
   }) {
@@ -116,7 +117,7 @@ export function useCalendarEvents() {
 
   async function updateEvent(
     id: string,
-    updates: Partial<Pick<CalendarEvent, 'title' | 'start_time' | 'end_time' | 'project_id' | 'all_day' | 'color' | 'description'>> & {
+    updates: Partial<Pick<CalendarEvent, 'title' | 'start_time' | 'end_time' | 'project_id' | 'all_day' | 'exclude_from_hours' | 'color' | 'description'>> & {
       assignee_user_ids?: string[]
     }
   ) {
