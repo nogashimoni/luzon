@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
+import ColorWheelPicker from '../ui/ColorWheelPicker'
 import type { Project } from '../../types'
 import { PROJECT_COLORS } from '../../utils/colors'
 
@@ -57,15 +58,7 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
           <label className="block text-sm font-semibold text-gray-700 mb-2.5 tracking-tight">
             Color
           </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white"
-            />
-            <span className="text-sm text-gray-500">{color}</span>
-          </div>
+          <ColorWheelPicker value={color} onChange={setColor} />
         </div>
 
         <div>
