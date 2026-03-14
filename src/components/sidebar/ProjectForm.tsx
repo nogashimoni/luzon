@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import ColorWheelPicker from '../ui/ColorWheelPicker'
@@ -8,7 +8,7 @@ import { PROJECT_COLORS } from '../../utils/colors'
 interface ProjectFormProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: { title: string; color: string; description?: string; deadline?: string }) => Promise<void>
+  onSubmit: (data: { title: string; color: string; description?: string; deadline?: string | null }) => Promise<void>
   initialData?: Project | null
 }
 
@@ -20,6 +20,13 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    setTitle(initialData?.title ?? '')
+    setColor(initialData?.color ?? PROJECT_COLORS[0])
+    setDescription(initialData?.description ?? '')
+    setDeadline(initialData?.deadline ?? '')
+  }, [initialData?.id])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) {
@@ -29,7 +36,7 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
     setSubmitting(true)
     setError('')
     try {
-      await onSubmit({ title: title.trim(), color, description: description.trim() || undefined, deadline: deadline || undefined })
+      await onSubmit({ title: title.trim(), color, description: description.trim() || undefined, deadline: deadline || null })
       onClose()
     } catch {
       setError('Failed to save project')
