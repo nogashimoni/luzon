@@ -170,7 +170,7 @@ export default function EventModal({
                 <button
                   type="button"
                   onClick={() => setCreatingProject(true)}
-                  className="px-3 py-2.5 border border-gray-200 rounded-xl text-[#007aff] hover:bg-[#007aff]/5 transition-all text-sm font-medium whitespace-nowrap"
+                  className="px-3 py-2.5 border border-gray-200 rounded-xl text-black hover:bg-gray-50 transition-all text-sm font-medium whitespace-nowrap"
                 >
                   + New
                 </button>
@@ -212,7 +212,7 @@ export default function EventModal({
                   type="button"
                   onClick={handleCreateProject}
                   disabled={creatingProjectLoading}
-                  className="flex-1 py-1.5 text-sm text-white bg-[#007aff] rounded-lg hover:bg-[#0051d5] disabled:opacity-50 transition-all"
+                  className="flex-1 py-1.5 text-sm text-white bg-black rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-all"
                 >
                   {creatingProjectLoading ? 'Creating...' : 'Create'}
                 </button>

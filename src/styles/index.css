@@ -16,12 +16,12 @@
 /* FullCalendar overrides - Apple-inspired */
 .fc {
   --fc-border-color: #f0f0f0;
-  --fc-button-bg-color: #007aff;
-  --fc-button-border-color: #007aff;
-  --fc-button-hover-bg-color: #0051d5;
-  --fc-button-hover-border-color: #0051d5;
-  --fc-button-active-bg-color: #004bb8;
-  --fc-button-active-border-color: #004bb8;
+  --fc-button-bg-color: #000000;
+  --fc-button-border-color: #000000;
+  --fc-button-hover-bg-color: #333333;
+  --fc-button-hover-border-color: #333333;
+  --fc-button-active-bg-color: #555555;
+  --fc-button-active-border-color: #555555;
   --fc-today-bg-color: #f8f9ff;
   --fc-event-border-color: transparent;
   font-family: inherit;
@@ -45,7 +45,7 @@
 
 .fc .fc-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .fc .fc-button:active {

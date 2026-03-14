@@ -94,7 +94,7 @@ export default function WelcomePage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 px-4 bg-[#007aff] hover:bg-[#0051d5] disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-sm hover:shadow-md tracking-tight"
+              className="w-full py-3.5 px-4 bg-black hover:bg-gray-800 disabled:opacity-50 text-white font-semibold rounded-xl transition-all shadow-sm hover:shadow-md tracking-tight"
             >
               {submitting ? 'Setting up...' : 'Get Started'}
             </button>
