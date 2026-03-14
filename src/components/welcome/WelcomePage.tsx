@@ -46,6 +46,7 @@ export default function WelcomePage() {
           <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Luzon</h1>
             <p className="text-gray-500 font-medium tracking-tight">Track your project hours</p>
+            <p className="text-gray-400 text-sm mt-1">This line was written from Noga's mobile</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
