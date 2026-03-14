@@ -22,12 +22,13 @@ interface CalendarViewProps {
     user_id: string
     assignee_user_ids?: string[]
     all_day?: boolean
+    exclude_from_hours?: boolean
     color?: string | null
     description?: string | null
   }) => Promise<CalendarEvent>
   onUpdateEvent: (
     id: string,
-    updates: Partial<Pick<CalendarEvent, 'title' | 'start_time' | 'end_time' | 'project_id' | 'all_day' | 'color' | 'description'>> & {
+    updates: Partial<Pick<CalendarEvent, 'title' | 'start_time' | 'end_time' | 'project_id' | 'all_day' | 'exclude_from_hours' | 'color' | 'description'>> & {
       assignee_user_ids?: string[]
     }
   ) => Promise<void>
@@ -220,6 +221,7 @@ export default function CalendarView({
               user_id: userId,
               assignee_user_ids: data.assignee_user_ids,
               all_day: data.all_day,
+              exclude_from_hours: data.exclude_from_hours,
               color: project?.color ?? null,
               description: data.description,
             })
@@ -242,6 +244,7 @@ export default function CalendarView({
             start: new Date(editing.start_time),
             end: new Date(editing.end_time),
             allDay: editing.all_day,
+            exclude_from_hours: editing.exclude_from_hours,
             project_id: editing.project_id,
             description: editing.description,
             assignee_user_ids: editing.assignees?.map(a => a.user_id) ?? [],
@@ -255,6 +258,7 @@ export default function CalendarView({
               project_id: data.project_id,
               assignee_user_ids: data.assignee_user_ids,
               all_day: data.all_day,
+              exclude_from_hours: data.exclude_from_hours,
               color: project?.color ?? null,
               description: data.description,
             })
