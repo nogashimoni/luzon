@@ -42,7 +42,7 @@ export function useProjects() {
     setLoading(false)
   }
 
-  async function createProject(project: { title: string; color: string; description?: string; deadline?: string; created_by: string }) {
+  async function createProject(project: { title: string; color: string; description?: string; deadline?: string | null; created_by: string }) {
     const { data, error } = await supabase.from('projects').insert(project).select().single()
     if (error) throw error
     return data as Project
