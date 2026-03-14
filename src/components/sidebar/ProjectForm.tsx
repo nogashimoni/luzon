@@ -56,13 +56,6 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2.5 tracking-tight">
-            Color
-          </label>
-          <ColorWheelPicker value={color} onChange={setColor} />
-        </div>
-
-        <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">
             Description (optional)
           </label>
@@ -70,7 +63,7 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief project description..."
-            rows={3}
+            rows={2}
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 resize-none transition-all"
           />
         </div>
@@ -85,6 +78,13 @@ export default function ProjectForm({ open, onClose, onSubmit, initialData }: Pr
             onChange={(e) => setDeadline(e.target.value)}
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 transition-all"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2.5 tracking-tight">
+            Color
+          </label>
+          <ColorWheelPicker value={color} onChange={setColor} />
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
