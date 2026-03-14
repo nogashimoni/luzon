@@ -22,7 +22,7 @@ interface EventModalProps {
     assignee_user_ids?: string[]
   }) => Promise<void>
   onDelete?: () => Promise<void>
-  onCreateProject?: (project: { title: string; color: string; description?: string; created_by: string }) => Promise<Project>
+  onCreateProject?: (project: { title: string; color: string; description?: string; deadline?: string; created_by: string }) => Promise<Project>
   projects: Project[]
   initialData?: {
     id?: string
