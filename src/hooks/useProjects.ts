@@ -42,13 +42,13 @@ export function useProjects() {
     setLoading(false)
   }
 
-  async function createProject(project: { title: string; color: string; description?: string; deadline?: string | null; created_by: string }) {
+  async function createProject(project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: string; created_by: string }) {
     const { data, error } = await supabase.from('projects').insert(project).select().single()
     if (error) throw error
     return data as Project
   }
 
-  async function updateProject(id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'deadline' | 'sort_order'>>) {
+  async function updateProject(id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order'>>) {
     const { error } = await supabase.from('projects').update(updates).eq('id', id)
     if (error) throw error
   }

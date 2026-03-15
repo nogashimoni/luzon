@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Project, CalendarEvent, ProjectStatus } from '../../types'
+import type { Project, CalendarEvent, ProjectStatus, ProjectType } from '../../types'
 import ProjectCard from './ProjectCard'
 import ProjectPanel from './ProjectPanel'
 import ProjectForm from './ProjectForm'
@@ -12,8 +12,8 @@ interface ProjectCardListProps {
   loading: boolean
   selectedProjectId: string | null
   onSelectProject: (id: string) => void
-  onCreateProject: (data: { title: string; color: string; description?: string; deadline?: string | null; created_by: string }) => Promise<Project>
-  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'deadline' | 'sort_order'>>) => Promise<void>
+  onCreateProject: (data: { title: string; color: string; description?: string; deadline?: string | null; project_type?: string; created_by: string }) => Promise<Project>
+  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order'>>) => Promise<void>
   onDeleteProject: (id: string) => Promise<void>
   userId: string
 }
@@ -54,6 +54,7 @@ export default function ProjectCardList({
   userId,
 }: ProjectCardListProps) {
   const [creating, setCreating] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<'all' | ProjectType>('all')
   const [panelProjectId, setPanelProjectId] = useState<string | null>(null)
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null)
   const [draggedFromSection, setDraggedFromSection] = useState<ProjectStatus | null>(null)
@@ -63,10 +64,14 @@ export default function ProjectCardList({
 
   const panelProject = panelProjectId ? projects.find((p) => p.id === panelProjectId) ?? null : null
 
+  const filteredProjects = typeFilter === 'all'
+    ? projects
+    : projects.filter((p) => (p.project_type ?? 'one_time') === typeFilter)
+
   const projectsByStatus = STATUS_SECTIONS.map((section) => ({
     ...section,
     projects: sortProjectsInSection(
-      projects.filter((p) => (p.status || 'in_progress') === section.id)
+      filteredProjects.filter((p) => (p.status || 'in_progress') === section.id)
     ),
   }))
 
@@ -113,6 +118,18 @@ export default function ProjectCardList({
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Projects</h3>
         <Button size="sm" onClick={() => setCreating(true)}>+ New</Button>
+      </div>
+
+      <div className="flex rounded-xl border border-gray-200 overflow-hidden mb-1">
+        {([['all', 'All'], ['retainer', 'Retainer'], ['one_time', 'One-time']] as [string, string][]).map(([val, label]) => (
+          <button
+            key={val}
+            onClick={() => setTypeFilter(val as 'all' | ProjectType)}
+            className={`flex-1 py-1.5 text-xs font-medium transition-colors ${typeFilter === val ? 'bg-[#007aff] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {projects.length === 0 && (
