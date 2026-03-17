@@ -1,6 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Groq from 'groq-sdk'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 interface Project {
   id: string
@@ -28,16 +28,17 @@ export const handler = async (event: { httpMethod: string; body: string | null }
       .map((p) => `- "${p.title}" (id: ${p.id}, status: ${p.status}, type: ${p.project_type}${p.deadline ? `, deadline: ${p.deadline}` : ''})`)
       .join('\n')
 
-    const response = await client.messages.create({
-      model: 'claude-opus-4-6',
-      max_tokens: 1024,
-      output_config: { effort: 'low' },
-      system: `You are an AI assistant for a project management app. Today is ${currentDate}.
+    const response = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an AI assistant for a project management app. Today is ${currentDate}.
 
 Available projects:
 ${projectList || '(no projects yet)'}
 
-The user will give you a natural language instruction. Call the execute_action tool with the appropriate structured action.
+The user will give you a natural language instruction. Call the execute_action function with the appropriate structured action.
 
 Supported actions:
 - add_task: add a task/checklist item to a project
@@ -50,43 +51,47 @@ Supported actions:
 - message: when you can't determine a clear action, respond with a helpful message
 
 Match project names case-insensitively and by partial match. For dates, interpret natural language like "tomorrow", "next Monday", "in 3 days" relative to today.`,
+        },
+        { role: 'user', content: message },
+      ],
       tools: [
         {
-          name: 'execute_action',
-          description: 'Execute the requested project management action',
-          input_schema: {
-            type: 'object' as const,
-            properties: {
-              action: {
-                type: 'string',
-                enum: ['add_task', 'complete_task', 'set_deadline', 'update_note', 'change_status', 'create_event', 'change_type', 'message'],
-                description: 'The type of action to perform',
+          type: 'function',
+          function: {
+            name: 'execute_action',
+            description: 'Execute the requested project management action',
+            parameters: {
+              type: 'object',
+              properties: {
+                action: {
+                  type: 'string',
+                  enum: ['add_task', 'complete_task', 'set_deadline', 'update_note', 'change_status', 'create_event', 'change_type', 'message'],
+                  description: 'The type of action to perform',
+                },
+                project_id: { type: 'string', description: 'The project ID (for project-related actions)' },
+                project_name: { type: 'string', description: 'The project name as referenced by the user' },
+                task_text: { type: 'string', description: 'Task text (for add_task or complete_task)' },
+                deadline_date: { type: 'string', description: 'Deadline date in YYYY-MM-DD format, or null to remove' },
+                note_content: { type: 'string', description: 'Note content (for update_note)' },
+                status: { type: 'string', enum: ['in_progress', 'waiting_payment', 'completed'], description: 'New project status' },
+                project_type: { type: 'string', enum: ['retainer', 'one_time'], description: 'New project type' },
+                event_title: { type: 'string', description: 'Calendar event title' },
+                event_date: { type: 'string', description: 'Event date in YYYY-MM-DD format' },
+                event_start_time: { type: 'string', description: 'Event start time in HH:MM format (24h), or null for all-day' },
+                event_end_time: { type: 'string', description: 'Event end time in HH:MM format (24h)' },
+                event_all_day: { type: 'boolean', description: 'Whether this is an all-day event' },
+                message: { type: 'string', description: 'Response message to show the user' },
               },
-              project_id: { type: 'string', description: 'The project ID (for project-related actions)' },
-              project_name: { type: 'string', description: 'The project name as referenced by the user' },
-              task_text: { type: 'string', description: 'Task text (for add_task or complete_task)' },
-              deadline_date: { type: ['string', 'null'], description: 'Deadline date in YYYY-MM-DD format, or null to remove' },
-              note_content: { type: 'string', description: 'Note content (for update_note)' },
-              status: { type: 'string', enum: ['in_progress', 'waiting_payment', 'completed'], description: 'New project status' },
-              project_type: { type: 'string', enum: ['retainer', 'one_time'], description: 'New project type' },
-              event_title: { type: 'string', description: 'Calendar event title' },
-              event_date: { type: 'string', description: 'Event date in YYYY-MM-DD format' },
-              event_start_time: { type: 'string', description: 'Event start time in HH:MM format (24h), or null for all-day' },
-              event_end_time: { type: 'string', description: 'Event end time in HH:MM format (24h)' },
-              event_all_day: { type: 'boolean', description: 'Whether this is an all-day event' },
-              message: { type: 'string', description: 'Response message to show the user' },
+              required: ['action'],
             },
-            required: ['action'],
-            additionalProperties: false,
           },
         },
       ],
-      tool_choice: { type: 'tool', name: 'execute_action' },
-      messages: [{ role: 'user', content: message }],
+      tool_choice: { type: 'function', function: { name: 'execute_action' } },
     })
 
-    const toolUse = response.content.find((b) => b.type === 'tool_use')
-    if (!toolUse || toolUse.type !== 'tool_use') {
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+    if (!toolCall) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -94,10 +99,11 @@ Match project names case-insensitively and by partial match. For dates, interpre
       }
     }
 
+    const parsed = JSON.parse(toolCall.function.arguments)
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(toolUse.input),
+      body: JSON.stringify(parsed),
     }
   } catch (err) {
     console.error('ai-command error:', err)
