@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { FunctionCallingMode, GoogleGenerativeAI, SchemaType } from '@google/generative-ai'
 
 const client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
 
@@ -55,26 +55,26 @@ Match project names case-insensitively and by partial match. For dates, interpre
               name: 'execute_action',
               description: 'Execute the requested project management action',
               parameters: {
-                type: 'object' as const,
+                type: SchemaType.OBJECT,
                 properties: {
                   action: {
-                    type: 'string' as const,
+                    type: SchemaType.STRING,
                     enum: ['add_task', 'complete_task', 'set_deadline', 'update_note', 'change_status', 'create_event', 'change_type', 'message'],
                     description: 'The type of action to perform',
                   },
-                  project_id: { type: 'string' as const, description: 'The project ID (for project-related actions)' },
-                  project_name: { type: 'string' as const, description: 'The project name as referenced by the user' },
-                  task_text: { type: 'string' as const, description: 'Task text (for add_task or complete_task)' },
-                  deadline_date: { type: 'string' as const, description: 'Deadline date in YYYY-MM-DD format, or null to remove' },
-                  note_content: { type: 'string' as const, description: 'Note content (for update_note)' },
-                  status: { type: 'string' as const, enum: ['in_progress', 'waiting_payment', 'completed'], description: 'New project status' },
-                  project_type: { type: 'string' as const, enum: ['retainer', 'one_time'], description: 'New project type' },
-                  event_title: { type: 'string' as const, description: 'Calendar event title' },
-                  event_date: { type: 'string' as const, description: 'Event date in YYYY-MM-DD format' },
-                  event_start_time: { type: 'string' as const, description: 'Event start time in HH:MM format (24h), or null for all-day' },
-                  event_end_time: { type: 'string' as const, description: 'Event end time in HH:MM format (24h)' },
-                  event_all_day: { type: 'boolean' as const, description: 'Whether this is an all-day event' },
-                  message: { type: 'string' as const, description: 'Response message to show the user' },
+                  project_id: { type: SchemaType.STRING, description: 'The project ID (for project-related actions)' },
+                  project_name: { type: SchemaType.STRING, description: 'The project name as referenced by the user' },
+                  task_text: { type: SchemaType.STRING, description: 'Task text (for add_task or complete_task)' },
+                  deadline_date: { type: SchemaType.STRING, description: 'Deadline date in YYYY-MM-DD format, or null to remove' },
+                  note_content: { type: SchemaType.STRING, description: 'Note content (for update_note)' },
+                  status: { type: SchemaType.STRING, enum: ['in_progress', 'waiting_payment', 'completed'], description: 'New project status' },
+                  project_type: { type: SchemaType.STRING, enum: ['retainer', 'one_time'], description: 'New project type' },
+                  event_title: { type: SchemaType.STRING, description: 'Calendar event title' },
+                  event_date: { type: SchemaType.STRING, description: 'Event date in YYYY-MM-DD format' },
+                  event_start_time: { type: SchemaType.STRING, description: 'Event start time in HH:MM format (24h), or null for all-day' },
+                  event_end_time: { type: SchemaType.STRING, description: 'Event end time in HH:MM format (24h)' },
+                  event_all_day: { type: SchemaType.BOOLEAN, description: 'Whether this is an all-day event' },
+                  message: { type: SchemaType.STRING, description: 'Response message to show the user' },
                 },
                 required: ['action'],
               },
@@ -82,7 +82,7 @@ Match project names case-insensitively and by partial match. For dates, interpre
           ],
         },
       ],
-      toolConfig: { functionCallingConfig: { mode: 'ANY' as const, allowedFunctionNames: ['execute_action'] } },
+      toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY, allowedFunctionNames: ['execute_action'] } },
     })
 
     const result = await model.generateContent(message)
