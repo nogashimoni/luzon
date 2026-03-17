@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import Avatar from '../ui/Avatar'
-import type { Project } from '../../types'
+import type { Project, ProjectType } from '../../types'
 import { format } from 'date-fns'
 import { useUsers } from '../../hooks/useUsers'
 import { PROJECT_COLORS } from '../../utils/colors'
@@ -22,7 +22,7 @@ interface EventModalProps {
     assignee_user_ids?: string[]
   }) => Promise<void>
   onDelete?: () => Promise<void>
-  onCreateProject?: (project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: string; created_by: string }) => Promise<Project>
+  onCreateProject?: (project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: ProjectType; created_by: string }) => Promise<Project>
   projects: Project[]
   initialData?: {
     id?: string

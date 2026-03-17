@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import ColorWheelPicker from '../ui/ColorWheelPicker'
-import type { Project } from '../../types'
+import type { Project, ProjectType } from '../../types'
 import { PROJECT_COLORS } from '../../utils/colors'
 
 interface ProjectFormProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: { title: string; color: string; description?: string; deadline?: string | null; project_type: string }) => Promise<void>
+  onSubmit: (data: { title: string; color: string; description?: string; deadline?: string | null; project_type: ProjectType }) => Promise<void>
   initialData?: Project | null
 }
 

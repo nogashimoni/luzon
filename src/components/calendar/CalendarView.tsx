@@ -6,7 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import listPlugin from '@fullcalendar/list'
 import type { EventClickArg, DateSelectArg, EventDropArg, EventContentArg } from '@fullcalendar/core'
 import type { EventResizeDoneArg } from '@fullcalendar/interaction'
-import type { CalendarEvent, Project } from '../../types'
+import type { CalendarEvent, Project, ProjectType } from '../../types'
 import EventModal from './EventModal'
 
 interface CalendarViewProps {
@@ -33,7 +33,7 @@ interface CalendarViewProps {
     }
   ) => Promise<void>
   onDeleteEvent: (id: string) => Promise<void>
-  onCreateProject: (project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: string; created_by: string }) => Promise<Project>
+  onCreateProject: (project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: ProjectType; created_by: string }) => Promise<Project>
 }
 
 export default function CalendarView({

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../config/supabase'
-import type { Project } from '../types'
+import type { Project, ProjectType } from '../types'
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -42,7 +42,7 @@ export function useProjects() {
     setLoading(false)
   }
 
-  async function createProject(project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: string; created_by: string }) {
+  async function createProject(project: { title: string; color: string; description?: string; deadline?: string | null; project_type?: ProjectType; created_by: string }) {
     const { data, error } = await supabase.from('projects').insert(project).select().single()
     if (error) throw error
     return data as Project
