@@ -103,10 +103,11 @@ Match project names case-insensitively and by partial match. For dates, interpre
     }
   } catch (err) {
     console.error('ai-command error:', err)
+    const errMsg = err instanceof Error ? err.message : String(err)
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'message', message: 'Something went wrong. Please try again.' }),
+      body: JSON.stringify({ action: 'message', message: `Error: ${errMsg}` }),
     }
   }
 }
