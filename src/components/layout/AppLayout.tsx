@@ -41,7 +41,7 @@ export default function AppLayout() {
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          footer={<CommandBar projects={projects} onUpdateProject={updateProject} userId={user?.id ?? ''} />}
+          footer={<CommandBar projects={projects} onUpdateProject={updateProject} onCreateEvent={createEvent} userId={user?.id ?? ''} />}
         >
           <ProjectCardList
             projects={projects}
