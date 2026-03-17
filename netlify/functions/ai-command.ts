@@ -29,7 +29,7 @@ export const handler = async (event: { httpMethod: string; body: string | null }
       .join('\n')
 
     const model = client.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       systemInstruction: `You are an AI assistant for a project management app. Today is ${currentDate}.
 
 Available projects:
@@ -107,7 +107,7 @@ Match project names case-insensitively and by partial match. For dates, interpre
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'message', message: `Error: ${errMsg}` }),
+      body: JSON.stringify({ action: 'message', message: 'Something went wrong. Please try again.' }),
     }
   }
 }
