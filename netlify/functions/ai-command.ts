@@ -107,7 +107,7 @@ Match project names case-insensitively and by partial match. For dates, interpre
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'message', message: 'Something went wrong. Please try again.' }),
+      body: JSON.stringify({ action: 'message', message: `Error: ${err instanceof Error ? err.message : String(err)}` }),
     }
   }
 }
