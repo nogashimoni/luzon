@@ -3,9 +3,10 @@ import { useUserContext } from '../../contexts/UserContext'
 interface HeaderProps {
   onToggleSidebar: () => void
   sidebarOpen: boolean
+  onOpenMenuRecommender: () => void
 }
 
-export default function Header({ onToggleSidebar, sidebarOpen }: HeaderProps) {
+export default function Header({ onToggleSidebar, sidebarOpen, onOpenMenuRecommender }: HeaderProps) {
   const { user, logout } = useUserContext()
 
   return (
@@ -29,6 +30,16 @@ export default function Header({ onToggleSidebar, sidebarOpen }: HeaderProps) {
 
       {user && (
         <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenMenuRecommender}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#007aff]/10 hover:bg-[#007aff]/20 text-[#007aff] text-xs font-semibold transition-colors"
+            title="Menu Recommender"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="hidden sm:inline">Menu</span>
+          </button>
           <span className="text-sm text-gray-600 hidden sm:inline font-medium tracking-tight">{user.name}</span>
           <div className="w-9 h-9 rounded-full bg-[#007aff] text-white flex items-center justify-center text-sm font-semibold shadow-sm">
             {user.name.charAt(0).toUpperCase()}

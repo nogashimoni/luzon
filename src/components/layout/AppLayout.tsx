@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import ProjectCardList from '../sidebar/ProjectCardList'
 import CommandBar from '../sidebar/CommandBar'
 import CalendarView from '../calendar/CalendarView'
+import MenuRecommender from '../menu/MenuRecommender'
 import { useProjects } from '../../hooks/useProjects'
 import { useCalendarEvents } from '../../hooks/useCalendarEvents'
 import { useUserContext } from '../../contexts/UserContext'
@@ -12,6 +13,7 @@ import { useUserContext } from '../../contexts/UserContext'
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [menuRecommenderOpen, setMenuRecommenderOpen] = useState(false)
   const { user } = useUserContext()
   const [searchParams] = useSearchParams()
 
@@ -35,6 +37,7 @@ export default function AppLayout() {
       <Header
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}
+        onOpenMenuRecommender={() => setMenuRecommenderOpen(true)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -72,6 +75,9 @@ export default function AppLayout() {
           />
         </main>
       </div>
+      {menuRecommenderOpen && (
+        <MenuRecommender onClose={() => setMenuRecommenderOpen(false)} />
+      )}
     </div>
   )
 }
