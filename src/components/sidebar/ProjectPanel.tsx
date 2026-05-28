@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../../config/supabase'
-import type { Project, CalendarEvent, ChecklistItem, ProjectHoursHistory, HoursTracking } from '../../types'
+import type { Project, CalendarEvent, ChecklistItem, ProjectFinancials, ProjectHoursHistory, HoursTracking } from '../../types'
 import { calculateProjectHours, formatHours, filterEventsForHours } from '../../utils/hours'
 import { getContrastColor } from '../../utils/colors'
 import ProjectForm from './ProjectForm'
@@ -54,6 +54,9 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [newPayment, setNewPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
   const [retainerAmountEdit, setRetainerAmountEdit] = useState(project.retainer_amount?.toString() ?? '')
 
+  // Legacy financials (project_financials table)
+  const [legacyMonths, setLegacyMonths] = useState<ProjectFinancials[]>([])
+
   // Hours tracking state
   const [hoursHistory, setHoursHistory] = useState<ProjectHoursHistory[]>([])
   const [resetting, setResetting] = useState(false)
@@ -85,6 +88,11 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     return () => { supabase.removeChannel(ch) }
   }, [project.id])
 
+
+  useEffect(() => {
+    supabase.from('project_financials').select('*').eq('project_id', project.id).order('month', { ascending: false })
+      .then(({ data }) => { if (data) setLegacyMonths(data) })
+  }, [project.id])
 
   async function fetchHoursHistory() {
     const { data } = await supabase
@@ -613,6 +621,29 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                     >
                       + Add payment
                     </button>
+                  )}
+
+                  {/* Legacy monthly data */}
+                  {legacyMonths.length > 0 && (
+                    <div className="border-t pt-4">
+                      <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Previous records</div>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {legacyMonths.map((m) => {
+                          const [y, mo] = m.month.split('-')
+                          const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+                          const profit = m.income - m.expenses
+                          return (
+                            <div key={m.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                              <div>
+                                <div className="text-sm font-medium text-gray-700">{label}</div>
+                                <div className="text-xs text-gray-400">Income ₪{m.income.toFixed(0)} · Exp ₪{m.expenses.toFixed(0)}{m.notes ? ` · ${m.notes}` : ''}</div>
+                              </div>
+                              <span className={`text-sm font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>₪{profit.toFixed(0)}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )}
                 </>
               )}
