@@ -17,3 +17,9 @@ CREATE TABLE IF NOT EXISTS project_hours_history (
 
 CREATE INDEX IF NOT EXISTS project_hours_history_project_id_idx
   ON project_hours_history (project_id, created_at DESC);
+
+ALTER TABLE project_hours_history ENABLE ROW LEVEL SECURITY;
+
+-- Allow all authenticated app users full access (same pattern as other tables in this project)
+CREATE POLICY "Allow all for authenticated users" ON project_hours_history
+  FOR ALL USING (true) WITH CHECK (true);
