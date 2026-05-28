@@ -49,10 +49,12 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
 
   // Payments state
-  const { payments, loading: paymentsLoading, addPayment, deletePayment, markPaid } = usePayments(project.id)
+  const { payments, loading: paymentsLoading, addPayment, updatePayment, deletePayment, markPaid } = usePayments(project.id)
   const [showAddPayment, setShowAddPayment] = useState(false)
   const [newPayment, setNewPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
   const [retainerAmountEdit, setRetainerAmountEdit] = useState(project.retainer_amount?.toString() ?? '')
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
+  const [editPayment, setEditPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
 
   // Legacy financials (project_financials table)
   const [legacyMonths, setLegacyMonths] = useState<ProjectFinancials[]>([])
@@ -541,6 +543,56 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                         p.status === 'paid' ? 'paid'
                         : p.due_date && new Date(p.due_date) < new Date() ? 'overdue'
                         : 'expected'
+
+                      if (editingPaymentId === p.id) {
+                        return (
+                          <div key={p.id} className="border border-[#007aff] rounded-xl p-3 space-y-2">
+                            <input
+                              type="text"
+                              value={editPayment.description}
+                              onChange={(e) => setEditPayment((prev) => ({ ...prev, description: e.target.value }))}
+                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="number"
+                                value={editPayment.amount}
+                                onChange={(e) => setEditPayment((prev) => ({ ...prev, amount: e.target.value }))}
+                                placeholder="Amount (₪)"
+                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                              />
+                              <input
+                                type="date"
+                                value={editPayment.due_date}
+                                onChange={(e) => setEditPayment((prev) => ({ ...prev, due_date: e.target.value }))}
+                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={editPayment.invoice_ref}
+                              onChange={(e) => setEditPayment((prev) => ({ ...prev, invoice_ref: e.target.value }))}
+                              placeholder="Invoice # (optional)"
+                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={async () => {
+                                  await updatePayment(p.id, {
+                                    description: editPayment.description.trim(),
+                                    amount: parseFloat(editPayment.amount) || p.amount,
+                                    due_date: editPayment.due_date || null,
+                                    invoice_ref: editPayment.invoice_ref.trim() || null,
+                                  })
+                                  setEditingPaymentId(null)
+                                }}
+                              >Save</Button>
+                              <Button variant="secondary" onClick={() => setEditingPaymentId(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        )
+                      }
+
                       return (
                         <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border ${effectiveStatus === 'paid' ? 'bg-green-50 border-green-100' : effectiveStatus === 'overdue' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
                           <div className="flex-1 min-w-0">
@@ -555,6 +607,10 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${effectiveStatus === 'paid' ? 'bg-green-100 text-green-700' : effectiveStatus === 'overdue' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
                               {effectiveStatus === 'paid' ? 'Paid' : effectiveStatus === 'overdue' ? 'Overdue' : 'Pending'}
                             </span>
+                            <button
+                              onClick={() => { setEditingPaymentId(p.id); setEditPayment({ description: p.description, amount: p.amount.toString(), due_date: p.due_date ?? '', invoice_ref: p.invoice_ref ?? '' }) }}
+                              className="text-xs text-[#007aff] hover:underline font-medium"
+                            >Edit</button>
                             {effectiveStatus !== 'paid' && (
                               <button onClick={() => markPaid(p.id)} className="text-xs px-2 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">✓</button>
                             )}
