@@ -79,6 +79,7 @@ export interface ProjectFinancials {
   income: number
   expenses: number
   notes: string | null
+  expected_date: string | null
   created_at: string
   updated_at: string
 }
