@@ -26,9 +26,7 @@ export default function AppLayout() {
     }
   }, [searchParams])
 
-  const filteredEvents = selectedProjectId
-    ? events.filter((e) => e.project_id === selectedProjectId)
-    : events
+  const filteredEvents = events
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
