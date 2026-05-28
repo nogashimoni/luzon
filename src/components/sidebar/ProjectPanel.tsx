@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../../config/supabase'
-import type { Project, CalendarEvent, ChecklistItem, ProjectFinancials } from '../../types'
-import { calculateProjectHours, formatHours } from '../../utils/hours'
+import type { Project, CalendarEvent, ChecklistItem, ProjectFinancials, ProjectHoursHistory, HoursTracking } from '../../types'
+import { calculateProjectHours, formatHours, filterEventsForHours } from '../../utils/hours'
 import { getContrastColor } from '../../utils/colors'
 import ProjectForm from './ProjectForm'
 import ProjectNotes from './ProjectNotes'
 import Button from '../ui/Button'
 
-type Tab = 'tasks' | 'notes' | 'financials'
+type Tab = 'tasks' | 'notes' | 'financials' | 'hours'
 
 interface ProjectPanelProps {
   project: Project
   events: CalendarEvent[]
   onClose: () => void
-  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order'>>) => Promise<void>
+  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 
@@ -57,6 +57,10 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [editItemText, setEditItemText] = useState('')
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
 
+  // Hours tracking state
+  const [hoursHistory, setHoursHistory] = useState<ProjectHoursHistory[]>([])
+  const [resetting, setResetting] = useState(false)
+
   // Financials state
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
   const [income, setIncome] = useState('')
@@ -64,8 +68,18 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [finNotes, setFinNotes] = useState('')
   const [allMonths, setAllMonths] = useState<ProjectFinancials[]>([])
 
-  const projectEvents = events.filter((e) => e.project_id === project.id)
+  const allProjectEvents = events.filter((e) => e.project_id === project.id)
+  const projectEvents = filterEventsForHours(allProjectEvents, project)
   const hours = calculateProjectHours(projectEvents)
+
+  useEffect(() => {
+    fetchHoursHistory()
+    const ch = supabase
+      .channel(`panel-hours-history-${project.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_hours_history', filter: `project_id=eq.${project.id}` }, () => fetchHoursHistory())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [project.id])
 
   useEffect(() => {
     fetchChecklistItems()
@@ -101,6 +115,52 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
       setFinNotes('')
     }
   }, [currentMonth, allMonths])
+
+  async function fetchHoursHistory() {
+    const { data } = await supabase
+      .from('project_hours_history')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('created_at', { ascending: false })
+    if (data) setHoursHistory(data)
+  }
+
+  async function handleResetHours(type: 'manual' | 'monthly_auto') {
+    setResetting(true)
+    const now = new Date().toISOString()
+
+    // Determine period_start: the previous reset time, or null (beginning of time)
+    const periodStart = project.hours_reset_at ?? null
+
+    // Determine period label
+    let periodLabel: string
+    if (type === 'monthly_auto') {
+      const d = new Date()
+      d.setMonth(d.getMonth() - 1)
+      periodLabel = d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+    } else {
+      periodLabel = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    }
+
+    // Save history record with accumulated hours up to now
+    const hoursToSave = calculateProjectHours(filterEventsForHours(allProjectEvents, project))
+    await supabase.from('project_hours_history').insert({
+      project_id: project.id,
+      period_label: periodLabel,
+      period_start: periodStart,
+      period_end: now,
+      hours: hoursToSave,
+      reset_type: type,
+    })
+
+    // Reset the project counter
+    await onUpdate(project.id, { hours_reset_at: now })
+    setResetting(false)
+  }
+
+  async function handleTrackingChange(mode: HoursTracking) {
+    await onUpdate(project.id, { hours_tracking: mode, hours_reset_at: mode === 'since_reset' ? new Date().toISOString() : null })
+  }
 
   async function fetchChecklistItems() {
     setChecklistLoading(true)
@@ -247,17 +307,19 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
 
         {/* Tabs */}
         <div className="flex border-b border-gray-100 bg-gray-50 shrink-0">
-          {(['tasks', 'notes', 'financials'] as Tab[]).map((t) => (
+          {(['tasks', 'notes', 'financials', 'hours'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 py-3 text-xs font-medium transition-colors ${
                 tab === t ? 'text-[#007aff] border-b-2 border-[#007aff] bg-white' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {t === 'tasks'
                 ? `Tasks${items.length > 0 ? ` (${completedCount}/${items.length})` : ''}`
-                : t === 'notes' ? 'Notes' : 'Financials'}
+                : t === 'notes' ? 'Notes'
+                : t === 'financials' ? 'Financials'
+                : 'Hours'}
             </button>
           ))}
         </div>
@@ -328,6 +390,92 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Hours */}
+          {tab === 'hours' && (
+            <div className="space-y-5">
+              {/* Current period summary */}
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-gray-500 mb-0.5">
+                    {project.hours_tracking === 'monthly'
+                      ? 'This month'
+                      : project.hours_tracking === 'since_reset'
+                      ? 'Since last reset'
+                      : 'All time'}
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{formatHours(hours)}</div>
+                </div>
+                {(project.hours_tracking === 'since_reset' || project.hours_tracking === 'monthly') && (
+                  <button
+                    onClick={() => handleResetHours('manual')}
+                    disabled={resetting}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-600 hover:text-[#007aff] hover:border-[#007aff] transition-colors disabled:opacity-50"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset now
+                  </button>
+                )}
+              </div>
+
+              {/* Tracking mode selector */}
+              <div>
+                <div className="text-xs font-semibold text-gray-700 mb-2">Tracking mode</div>
+                <div className="flex rounded-xl border border-gray-200 overflow-hidden">
+                  {([
+                    ['all_time', 'All time'],
+                    ['monthly', 'Monthly'],
+                    ['since_reset', 'Manual'],
+                  ] as [HoursTracking, string][]).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      onClick={() => handleTrackingChange(mode)}
+                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                        (project.hours_tracking ?? 'all_time') === mode
+                          ? 'bg-[#007aff] text-white'
+                          : 'bg-white text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {project.hours_tracking === 'monthly'
+                    ? 'Counter resets automatically on the 1st of each month.'
+                    : project.hours_tracking === 'since_reset'
+                    ? 'Counter resets only when you press "Reset now".'
+                    : 'Counts all hours ever logged to this project.'}
+                </p>
+              </div>
+
+              {/* History */}
+              {hoursHistory.length > 0 && (
+                <div>
+                  <div className="text-xs font-semibold text-gray-700 mb-2">History</div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {hoursHistory.map((h) => (
+                      <div key={h.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                        <div>
+                          <div className="text-sm font-medium text-gray-800">{h.period_label ?? 'Period'}</div>
+                          <div className="text-xs text-gray-400">
+                            {h.reset_type === 'monthly_auto' ? 'Auto reset' : 'Manual reset'} · {new Date(h.period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-gray-700">{formatHours(h.hours)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {hoursHistory.length === 0 && project.hours_tracking === 'all_time' && (
+                <p className="text-xs text-gray-400 text-center py-4">Switch to Monthly or Manual mode to start tracking periods.</p>
               )}
             </div>
           )}

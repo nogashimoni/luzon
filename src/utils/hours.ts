@@ -1,4 +1,21 @@
-import type { CalendarEvent } from '../types'
+import type { CalendarEvent, Project, HoursTracking } from '../types'
+
+export function getHoursWindowStart(tracking: HoursTracking, resetAt: string | null): Date | null {
+  if (tracking === 'monthly') {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  }
+  if (tracking === 'since_reset' && resetAt) {
+    return new Date(resetAt)
+  }
+  return null // all_time — no filter
+}
+
+export function filterEventsForHours(events: CalendarEvent[], project: Pick<Project, 'hours_tracking' | 'hours_reset_at'>): CalendarEvent[] {
+  const from = getHoursWindowStart(project.hours_tracking ?? 'all_time', project.hours_reset_at)
+  if (!from) return events
+  return events.filter((e) => new Date(e.start_time) >= from)
+}
 
 export function calculateEventHours(event: CalendarEvent): number {
   if (event.exclude_from_hours) return 0

@@ -13,7 +13,7 @@ interface ProjectCardListProps {
   selectedProjectId: string | null
   onSelectProject: (id: string) => void
   onCreateProject: (data: { title: string; color: string; description?: string; deadline?: string | null; project_type?: ProjectType; created_by: string }) => Promise<Project>
-  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order'>>) => Promise<void>
+  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at'>>) => Promise<void>
   onDeleteProject: (id: string) => Promise<void>
   userId: string
 }
