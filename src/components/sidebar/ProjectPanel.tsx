@@ -58,6 +58,8 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
 
   // Legacy financials (project_financials table)
   const [legacyMonths, setLegacyMonths] = useState<ProjectFinancials[]>([])
+  const [editingLegacyId, setEditingLegacyId] = useState<string | null>(null)
+  const [editLegacy, setEditLegacy] = useState({ income: '', expenses: '', notes: '' })
 
   // Hours tracking state
   const [hoursHistory, setHoursHistory] = useState<ProjectHoursHistory[]>([])
@@ -688,13 +690,44 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                           const [y, mo] = m.month.split('-')
                           const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
                           const profit = m.income - m.expenses
+
+                          if (editingLegacyId === m.id) {
+                            return (
+                              <div key={m.id} className="border border-[#007aff] rounded-xl p-3 space-y-2">
+                                <div className="text-xs font-semibold text-gray-700">{label}</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="text-xs text-gray-500 mb-1 block">Income</label>
+                                    <input type="number" value={editLegacy.income} onChange={(e) => setEditLegacy((p) => ({ ...p, income: e.target.value }))} className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]" />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-gray-500 mb-1 block">Expenses</label>
+                                    <input type="number" value={editLegacy.expenses} onChange={(e) => setEditLegacy((p) => ({ ...p, expenses: e.target.value }))} className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]" />
+                                  </div>
+                                </div>
+                                <input type="text" value={editLegacy.notes} onChange={(e) => setEditLegacy((p) => ({ ...p, notes: e.target.value }))} placeholder="Notes (optional)" className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]" />
+                                <div className="flex gap-2">
+                                  <Button onClick={async () => {
+                                    await supabase.from('project_financials').update({ income: parseFloat(editLegacy.income) || 0, expenses: parseFloat(editLegacy.expenses) || 0, notes: editLegacy.notes.trim() || null }).eq('id', m.id)
+                                    setLegacyMonths((prev) => prev.map((r) => r.id === m.id ? { ...r, income: parseFloat(editLegacy.income) || 0, expenses: parseFloat(editLegacy.expenses) || 0, notes: editLegacy.notes.trim() || null } : r))
+                                    setEditingLegacyId(null)
+                                  }}>Save</Button>
+                                  <Button variant="secondary" onClick={() => setEditingLegacyId(null)}>Cancel</Button>
+                                </div>
+                              </div>
+                            )
+                          }
+
                           return (
                             <div key={m.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
                               <div>
                                 <div className="text-sm font-medium text-gray-700">{label}</div>
                                 <div className="text-xs text-gray-400">Income ₪{m.income.toFixed(0)} · Exp ₪{m.expenses.toFixed(0)}{m.notes ? ` · ${m.notes}` : ''}</div>
                               </div>
-                              <span className={`text-sm font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>₪{profit.toFixed(0)}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>₪{profit.toFixed(0)}</span>
+                                <button onClick={() => { setEditingLegacyId(m.id); setEditLegacy({ income: m.income.toString(), expenses: m.expenses.toString(), notes: m.notes ?? '' }) }} className="text-xs text-[#007aff] hover:underline font-medium">Edit</button>
+                              </div>
                             </div>
                           )
                         })}
