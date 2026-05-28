@@ -601,7 +601,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-xs font-bold text-gray-700">₪{p.amount.toFixed(0)}</span>
-                              {p.due_date && <span className="text-xs text-gray-400">due {new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
+                              {p.due_date && <span className="text-xs text-gray-400">expected {new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
                               {p.invoice_ref && <span className="text-xs text-gray-400">#{p.invoice_ref}</span>}
                             </div>
                           </div>
@@ -644,7 +644,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                         />
                         <input
                           type="date"
-                          placeholder="Due date"
+                          placeholder="Expected receipt date"
                           value={newPayment.due_date}
                           onChange={(e) => setNewPayment((prev) => ({ ...prev, due_date: e.target.value }))}
                           className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
