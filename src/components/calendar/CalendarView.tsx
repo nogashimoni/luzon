@@ -178,6 +178,7 @@ export default function CalendarView({
         eventClick={handleEventClick}
         eventDrop={handleEventDrop}
         eventResize={handleEventResize}
+        locale='en-GB'
         scrollTime="09:00:00"
         slotMinTime="06:00:00"
         slotMaxTime="22:00:00"
