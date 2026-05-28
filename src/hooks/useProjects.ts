@@ -48,7 +48,7 @@ export function useProjects() {
     return data as Project
   }
 
-  async function updateProject(id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at'>>) {
+  async function updateProject(id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at' | 'retainer_amount'>>) {
     const { error } = await supabase.from('projects').update(updates).eq('id', id)
     if (error) throw error
   }

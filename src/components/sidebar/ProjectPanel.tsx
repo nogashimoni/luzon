@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../../config/supabase'
-import type { Project, CalendarEvent, ChecklistItem, ProjectFinancials, ProjectHoursHistory, HoursTracking } from '../../types'
+import type { Project, CalendarEvent, ChecklistItem, ProjectHoursHistory, HoursTracking } from '../../types'
 import { calculateProjectHours, formatHours, filterEventsForHours } from '../../utils/hours'
 import { getContrastColor } from '../../utils/colors'
 import ProjectForm from './ProjectForm'
 import ProjectNotes from './ProjectNotes'
 import Button from '../ui/Button'
+import { usePayments } from '../../hooks/usePayments'
 
 type Tab = 'tasks' | 'notes' | 'financials' | 'hours'
 
@@ -14,7 +15,7 @@ interface ProjectPanelProps {
   project: Project
   events: CalendarEvent[]
   onClose: () => void
-  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at'>>) => Promise<void>
+  onUpdate: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at' | 'retainer_amount'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 
@@ -33,16 +34,6 @@ function formatDeadline(deadline: string): { label: string; color: string } {
   return { label, color }
 }
 
-function getCurrentMonth() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-
-function formatMonthDisplay(month: string) {
-  const [year, monthNum] = month.split('-')
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1)
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-}
 
 export default function ProjectPanel({ project, events, onClose, onUpdate, onDelete }: ProjectPanelProps) {
   const [tab, setTab] = useState<Tab>('tasks')
@@ -57,16 +48,16 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [editItemText, setEditItemText] = useState('')
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
 
+  // Payments state
+  const { payments, loading: paymentsLoading, addPayment, deletePayment, markPaid } = usePayments(project.id)
+  const [showAddPayment, setShowAddPayment] = useState(false)
+  const [newPayment, setNewPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
+  const [retainerAmountEdit, setRetainerAmountEdit] = useState(project.retainer_amount?.toString() ?? '')
+
   // Hours tracking state
   const [hoursHistory, setHoursHistory] = useState<ProjectHoursHistory[]>([])
   const [resetting, setResetting] = useState(false)
 
-  // Financials state
-  const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
-  const [income, setIncome] = useState('')
-  const [expenses, setExpenses] = useState('')
-  const [finNotes, setFinNotes] = useState('')
-  const [allMonths, setAllMonths] = useState<ProjectFinancials[]>([])
 
   const allProjectEvents = events.filter((e) => e.project_id === project.id)
   const projectEvents = filterEventsForHours(allProjectEvents, project)
@@ -94,27 +85,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     return () => { supabase.removeChannel(ch) }
   }, [project.id])
 
-  useEffect(() => {
-    fetchFinancials()
-    const ch = supabase
-      .channel(`panel-financials-${project.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_financials', filter: `project_id=eq.${project.id}` }, () => fetchFinancials())
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [project.id])
-
-  useEffect(() => {
-    const monthData = allMonths.find((m) => m.month === currentMonth)
-    if (monthData) {
-      setIncome(monthData.income.toString())
-      setExpenses(monthData.expenses.toString())
-      setFinNotes(monthData.notes || '')
-    } else {
-      setIncome('')
-      setExpenses('')
-      setFinNotes('')
-    }
-  }, [currentMonth, allMonths])
 
   async function fetchHoursHistory() {
     const { data } = await supabase
@@ -169,10 +139,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     setChecklistLoading(false)
   }
 
-  async function fetchFinancials() {
-    const { data } = await supabase.from('project_financials').select('*').eq('project_id', project.id).order('month', { ascending: false })
-    if (data) setAllMonths(data)
-  }
 
   async function addChecklistItem() {
     if (!newItemText.trim()) return
@@ -211,33 +177,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     for (const item of updated) await supabase.from('project_checklist_items').update({ item_order: item.item_order }).eq('id', item.id)
   }
 
-  async function saveFinancials() {
-    await supabase.from('project_financials').upsert({
-      project_id: project.id,
-      month: currentMonth,
-      income: parseFloat(income) || 0,
-      expenses: parseFloat(expenses) || 0,
-      notes: finNotes.trim() || null,
-    }, { onConflict: 'project_id,month' })
-    fetchFinancials()
-  }
-
-  function prevMonth() {
-    const [y, m] = currentMonth.split('-').map(Number)
-    const d = new Date(y, m - 2)
-    setCurrentMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-
-  function nextMonth() {
-    const [y, m] = currentMonth.split('-').map(Number)
-    const d = new Date(y, m)
-    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    if (next <= getCurrentMonth()) setCurrentMonth(next)
-  }
-
-  const profit = (parseFloat(income) || 0) - (parseFloat(expenses) || 0)
-  const totalIncome = allMonths.reduce((s, m) => s + m.income, 0)
-  const totalExpenses = allMonths.reduce((s, m) => s + m.expenses, 0)
   const completedCount = items.filter((i) => i.completed).length
 
   return createPortal(
@@ -522,69 +461,160 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
             </div>
           )}
 
-          {/* Financials */}
+          {/* Financials / Payments */}
           {tab === 'financials' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
-                <button onClick={prevMonth} className="p-2 hover:bg-white rounded-lg transition-colors">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </button>
-                <div className="text-center">
-                  <div className="font-semibold text-gray-900">{formatMonthDisplay(currentMonth)}</div>
-                  {currentMonth === getCurrentMonth() && <div className="text-xs text-[#007aff]">Current Month</div>}
-                </div>
-                <button onClick={nextMonth} disabled={currentMonth >= getCurrentMonth()} className={`p-2 rounded-lg transition-colors ${currentMonth < getCurrentMonth() ? 'hover:bg-white' : 'opacity-30 cursor-not-allowed'}`}>
-                  <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Income</label>
-                  <input type="number" step="0.01" value={income} onChange={(e) => setIncome(e.target.value)} onBlur={saveFinancials} placeholder="0.00" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 transition-all" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Expenses</label>
-                  <input type="number" step="0.01" value={expenses} onChange={(e) => setExpenses(e.target.value)} onBlur={saveFinancials} placeholder="0.00" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 transition-all" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notes (optional)</label>
-                <textarea value={finNotes} onChange={(e) => setFinNotes(e.target.value)} onBlur={saveFinancials} placeholder="Notes about this month..." rows={2} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 resize-none transition-all" />
-              </div>
-
-              <div className={`p-4 rounded-xl ${profit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                <div className="text-sm text-gray-600 mb-1">This Month's Profit</div>
-                <div className={`text-2xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>₪{profit.toFixed(2)}</div>
-              </div>
-
-              {allMonths.length > 0 && (
-                <div className="border-t pt-4">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">All Time</h4>
-                  <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <div className="text-xs text-gray-600 mb-1">Income</div>
-                      <div className="text-base font-bold text-blue-600">₪{totalIncome.toFixed(0)}</div>
+              {paymentsLoading ? (
+                <div className="text-center py-8 text-gray-400 text-sm">Loading...</div>
+              ) : (
+                <>
+                  {/* Retainer: monthly amount setting */}
+                  {project.project_type === 'retainer' && (
+                    <div className="bg-blue-50 rounded-xl p-4">
+                      <div className="text-xs font-semibold text-blue-700 mb-2">Monthly retainer fee</div>
+                      <div className="flex gap-2 items-center">
+                        <span className="text-sm text-gray-500">₪</span>
+                        <input
+                          type="number"
+                          value={retainerAmountEdit}
+                          onChange={(e) => setRetainerAmountEdit(e.target.value)}
+                          onBlur={() => onUpdate(project.id, { retainer_amount: parseFloat(retainerAmountEdit) || null })}
+                          placeholder="0"
+                          className="w-28 px-3 py-1.5 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none text-sm font-semibold text-gray-900 bg-white"
+                        />
+                        <button
+                          onClick={async () => {
+                            const now = new Date()
+                            const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+                            const exists = payments.some((p) => p.month === month)
+                            if (exists) return
+                            const amount = parseFloat(retainerAmountEdit) || project.retainer_amount || 0
+                            const dueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+                            await addPayment({ project_id: project.id, description: `Retainer – ${now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`, amount, due_date: dueDate, paid_date: null, status: 'expected', invoice_ref: null, month })
+                          }}
+                          className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                        >
+                          + This month
+                        </button>
+                      </div>
                     </div>
-                    <div className="bg-orange-50 p-3 rounded-lg">
-                      <div className="text-xs text-gray-600 mb-1">Expenses</div>
-                      <div className="text-base font-bold text-orange-600">₪{totalExpenses.toFixed(0)}</div>
-                    </div>
-                    <div className={`p-3 rounded-lg ${totalIncome - totalExpenses >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                      <div className="text-xs text-gray-600 mb-1">Profit</div>
-                      <div className={`text-base font-bold ${totalIncome - totalExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>₪{(totalIncome - totalExpenses).toFixed(0)}</div>
-                    </div>
+                  )}
+
+                  {/* Summary */}
+                  {payments.length > 0 && (() => {
+                    const totalExpected = payments.reduce((s, p) => s + p.amount, 0)
+                    const totalPaid = payments.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
+                    const outstanding = totalExpected - totalPaid
+                    return (
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-gray-50 rounded-xl p-3">
+                          <div className="text-xs text-gray-500 mb-0.5">Expected</div>
+                          <div className="text-sm font-bold text-gray-800">₪{totalExpected.toFixed(0)}</div>
+                        </div>
+                        <div className="bg-green-50 rounded-xl p-3">
+                          <div className="text-xs text-gray-500 mb-0.5">Collected</div>
+                          <div className="text-sm font-bold text-green-700">₪{totalPaid.toFixed(0)}</div>
+                        </div>
+                        <div className={`rounded-xl p-3 ${outstanding > 0 ? 'bg-orange-50' : 'bg-green-50'}`}>
+                          <div className="text-xs text-gray-500 mb-0.5">Outstanding</div>
+                          <div className={`text-sm font-bold ${outstanding > 0 ? 'text-orange-600' : 'text-green-700'}`}>₪{outstanding.toFixed(0)}</div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Payment list */}
+                  <div className="space-y-2">
+                    {payments.length === 0 && (
+                      <div className="text-center py-8 text-gray-400 text-sm">No payments yet. Add one below.</div>
+                    )}
+                    {payments.map((p) => {
+                      const effectiveStatus: 'paid' | 'overdue' | 'expected' =
+                        p.status === 'paid' ? 'paid'
+                        : p.due_date && new Date(p.due_date) < new Date() ? 'overdue'
+                        : 'expected'
+                      return (
+                        <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border ${effectiveStatus === 'paid' ? 'bg-green-50 border-green-100' : effectiveStatus === 'overdue' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs font-bold text-gray-700">₪{p.amount.toFixed(0)}</span>
+                              {p.due_date && <span className="text-xs text-gray-400">due {new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
+                              {p.invoice_ref && <span className="text-xs text-gray-400">#{p.invoice_ref}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${effectiveStatus === 'paid' ? 'bg-green-100 text-green-700' : effectiveStatus === 'overdue' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                              {effectiveStatus === 'paid' ? 'Paid' : effectiveStatus === 'overdue' ? 'Overdue' : 'Pending'}
+                            </span>
+                            {effectiveStatus !== 'paid' && (
+                              <button onClick={() => markPaid(p.id)} className="text-xs px-2 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">✓</button>
+                            )}
+                            <button onClick={() => deletePayment(p.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">✕</button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {allMonths.map((m) => (
-                      <button key={m.id} onClick={() => setCurrentMonth(m.month)} className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${currentMonth === m.month ? 'bg-blue-50 border-2 border-[#007aff]' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                        <span className="text-sm font-medium text-gray-700">{formatMonthDisplay(m.month)}</span>
-                        <span className={`text-sm font-bold ${m.income - m.expenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>₪{(m.income - m.expenses).toFixed(0)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
+                  {/* Add payment */}
+                  {showAddPayment ? (
+                    <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                      <div className="text-xs font-semibold text-gray-700">New payment</div>
+                      <input
+                        type="text"
+                        placeholder="Description"
+                        value={newPayment.description}
+                        onChange={(e) => setNewPayment((prev) => ({ ...prev, description: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          placeholder="Amount (₪)"
+                          value={newPayment.amount}
+                          onChange={(e) => setNewPayment((prev) => ({ ...prev, amount: e.target.value }))}
+                          className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                        />
+                        <input
+                          type="date"
+                          placeholder="Due date"
+                          value={newPayment.due_date}
+                          onChange={(e) => setNewPayment((prev) => ({ ...prev, due_date: e.target.value }))}
+                          className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Invoice # (optional)"
+                        value={newPayment.invoice_ref}
+                        onChange={(e) => setNewPayment((prev) => ({ ...prev, invoice_ref: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={async () => {
+                            if (!newPayment.description.trim() || !newPayment.amount) return
+                            await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : null })
+                            setNewPayment({ description: '', amount: '', due_date: '', invoice_ref: '' })
+                            setShowAddPayment(false)
+                          }}
+                          disabled={!newPayment.description.trim() || !newPayment.amount}
+                        >
+                          Add
+                        </Button>
+                        <Button variant="secondary" onClick={() => setShowAddPayment(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowAddPayment(true)}
+                      className="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-[#007aff] hover:text-[#007aff] transition-colors"
+                    >
+                      + Add payment
+                    </button>
+                  )}
+                </>
               )}
             </div>
           )}
