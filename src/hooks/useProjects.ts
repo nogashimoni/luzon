@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../config/supabase'
-import type { Project, ProjectType } from '../types'
+import type { Project, ProjectType, HoursTracking } from '../types'
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -48,7 +48,7 @@ export function useProjects() {
     return data as Project
   }
 
-  async function updateProject(id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order'>>) {
+  async function updateProject(id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at'>>) {
     const { error } = await supabase.from('projects').update(updates).eq('id', id)
     if (error) throw error
   }

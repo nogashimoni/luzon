@@ -7,6 +7,7 @@ export interface User {
 
 export type ProjectStatus = 'in_progress' | 'waiting_payment' | 'completed'
 export type ProjectType = 'retainer' | 'one_time'
+export type HoursTracking = 'all_time' | 'monthly' | 'since_reset'
 
 export interface Project {
   id: string
@@ -17,9 +18,22 @@ export interface Project {
   project_type: ProjectType
   deadline: string | null
   sort_order: number | null
+  hours_tracking: HoursTracking
+  hours_reset_at: string | null
   created_by: string
   created_at: string
   updated_at: string
+}
+
+export interface ProjectHoursHistory {
+  id: string
+  project_id: string
+  period_label: string | null
+  period_start: string | null
+  period_end: string
+  hours: number
+  reset_type: 'manual' | 'monthly_auto'
+  created_at: string
 }
 
 export interface ProjectNote {

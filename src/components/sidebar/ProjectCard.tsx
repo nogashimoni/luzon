@@ -1,5 +1,5 @@
 import type { Project, CalendarEvent } from '../../types'
-import { calculateProjectHours, formatHours } from '../../utils/hours'
+import { calculateProjectHours, formatHours, filterEventsForHours } from '../../utils/hours'
 import { getContrastColor } from '../../utils/colors'
 
 interface ProjectCardProps {
@@ -26,7 +26,10 @@ function formatDeadline(deadline: string): { label: string; color: string } {
 }
 
 export default function ProjectCard({ project, events, selected, onSelect, onOpenPanel }: ProjectCardProps) {
-  const projectEvents = events.filter((e) => e.project_id === project.id)
+  const projectEvents = filterEventsForHours(
+    events.filter((e) => e.project_id === project.id),
+    project
+  )
   const hours = calculateProjectHours(projectEvents)
 
   return (
