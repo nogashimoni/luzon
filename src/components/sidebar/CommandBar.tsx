@@ -4,7 +4,7 @@ import type { Project, ProjectStatus, ProjectType } from '../../types'
 
 interface CommandBarProps {
   projects: Project[]
-  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at'>>) => Promise<void>
+  onUpdateProject: (id: string, updates: Partial<Pick<Project, 'title' | 'color' | 'description' | 'status' | 'project_type' | 'deadline' | 'sort_order' | 'hours_tracking' | 'hours_reset_at' | 'retainer_amount'>>) => Promise<void>
   onCreateEvent?: (event: {
     title: string
     start_time: string

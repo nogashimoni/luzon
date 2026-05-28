@@ -20,7 +20,24 @@ export interface Project {
   sort_order: number | null
   hours_tracking: HoursTracking
   hours_reset_at: string | null
+  retainer_amount: number | null
   created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type PaymentStatus = 'expected' | 'paid' | 'overdue'
+
+export interface ProjectPayment {
+  id: string
+  project_id: string
+  description: string
+  amount: number
+  due_date: string | null
+  paid_date: string | null
+  status: PaymentStatus
+  invoice_ref: string | null
+  month: string | null
   created_at: string
   updated_at: string
 }
