@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../../config/supabase'
-import type { Project, CalendarEvent, ChecklistItem, ProjectFinancials, ProjectHoursHistory, HoursTracking } from '../../types'
+import type { Project, CalendarEvent, ChecklistItem, ProjectHoursHistory, HoursTracking } from '../../types'
 import { calculateProjectHours, formatHours, filterEventsForHours } from '../../utils/hours'
 import { getContrastColor } from '../../utils/colors'
 import ProjectForm from './ProjectForm'
@@ -34,16 +34,6 @@ function formatDeadline(deadline: string): { label: string; color: string } {
   return { label, color }
 }
 
-function getCurrentMonth() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-
-function formatMonthDisplay(month: string) {
-  const [year, monthNum] = month.split('-')
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1)
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-}
 
 export default function ProjectPanel({ project, events, onClose, onUpdate, onDelete }: ProjectPanelProps) {
   const [tab, setTab] = useState<Tab>('tasks')
@@ -68,12 +58,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [hoursHistory, setHoursHistory] = useState<ProjectHoursHistory[]>([])
   const [resetting, setResetting] = useState(false)
 
-  // Financials state
-  const [currentMonth, setCurrentMonth] = useState(getCurrentMonth())
-  const [income, setIncome] = useState('')
-  const [expenses, setExpenses] = useState('')
-  const [finNotes, setFinNotes] = useState('')
-  const [allMonths, setAllMonths] = useState<ProjectFinancials[]>([])
 
   const allProjectEvents = events.filter((e) => e.project_id === project.id)
   const projectEvents = filterEventsForHours(allProjectEvents, project)
@@ -101,27 +85,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     return () => { supabase.removeChannel(ch) }
   }, [project.id])
 
-  useEffect(() => {
-    fetchFinancials()
-    const ch = supabase
-      .channel(`panel-financials-${project.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_financials', filter: `project_id=eq.${project.id}` }, () => fetchFinancials())
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [project.id])
-
-  useEffect(() => {
-    const monthData = allMonths.find((m) => m.month === currentMonth)
-    if (monthData) {
-      setIncome(monthData.income.toString())
-      setExpenses(monthData.expenses.toString())
-      setFinNotes(monthData.notes || '')
-    } else {
-      setIncome('')
-      setExpenses('')
-      setFinNotes('')
-    }
-  }, [currentMonth, allMonths])
 
   async function fetchHoursHistory() {
     const { data } = await supabase
@@ -176,10 +139,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     setChecklistLoading(false)
   }
 
-  async function fetchFinancials() {
-    const { data } = await supabase.from('project_financials').select('*').eq('project_id', project.id).order('month', { ascending: false })
-    if (data) setAllMonths(data)
-  }
 
   async function addChecklistItem() {
     if (!newItemText.trim()) return
@@ -218,33 +177,6 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
     for (const item of updated) await supabase.from('project_checklist_items').update({ item_order: item.item_order }).eq('id', item.id)
   }
 
-  async function saveFinancials() {
-    await supabase.from('project_financials').upsert({
-      project_id: project.id,
-      month: currentMonth,
-      income: parseFloat(income) || 0,
-      expenses: parseFloat(expenses) || 0,
-      notes: finNotes.trim() || null,
-    }, { onConflict: 'project_id,month' })
-    fetchFinancials()
-  }
-
-  function prevMonth() {
-    const [y, m] = currentMonth.split('-').map(Number)
-    const d = new Date(y, m - 2)
-    setCurrentMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-
-  function nextMonth() {
-    const [y, m] = currentMonth.split('-').map(Number)
-    const d = new Date(y, m)
-    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    if (next <= getCurrentMonth()) setCurrentMonth(next)
-  }
-
-  const profit = (parseFloat(income) || 0) - (parseFloat(expenses) || 0)
-  const totalIncome = allMonths.reduce((s, m) => s + m.income, 0)
-  const totalExpenses = allMonths.reduce((s, m) => s + m.expenses, 0)
   const completedCount = items.filter((i) => i.completed).length
 
   return createPortal(
