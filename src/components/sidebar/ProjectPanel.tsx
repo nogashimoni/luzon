@@ -477,6 +477,40 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
               {hoursHistory.length === 0 && project.hours_tracking === 'all_time' && (
                 <p className="text-xs text-gray-400 text-center py-4">Switch to Monthly or Manual mode to start tracking periods.</p>
               )}
+
+              {/* Monthly breakdown from events */}
+              {(() => {
+                const byMonth: Record<string, number> = {}
+                for (const event of allProjectEvents) {
+                  if (event.exclude_from_hours) continue
+                  const start = new Date(event.start_time)
+                  const end = new Date(event.end_time)
+                  const hours = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60 * 60))
+                  const assigneeCount = event.assignees?.length || 1
+                  const key = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`
+                  byMonth[key] = (byMonth[key] ?? 0) + hours * assigneeCount
+                }
+                const months = Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]))
+                if (months.length === 0) return null
+                return (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-700 mb-2">By month</div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {months.map(([month, h]) => {
+                        const [y, m] = month.split('-')
+                        const label = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+                        const isCurrentMonth = month === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+                        return (
+                          <div key={month} className={`flex items-center justify-between rounded-xl px-4 py-3 ${isCurrentMonth ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
+                            <span className={`text-sm font-medium ${isCurrentMonth ? 'text-blue-700' : 'text-gray-700'}`}>{label}</span>
+                            <span className={`text-sm font-bold ${isCurrentMonth ? 'text-blue-700' : 'text-gray-700'}`}>{formatHours(h)}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )}
 
