@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../config/supabase'
-import type { Project, ProjectType, HoursTracking } from '../types'
+import type { Project, ProjectType } from '../types'
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([])
