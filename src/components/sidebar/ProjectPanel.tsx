@@ -49,7 +49,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
 
   // Payments state
-  const { payments, loading: paymentsLoading, addPayment, updatePayment, deletePayment, markPaid } = usePayments(project.id)
+  const { payments, loading: paymentsLoading, addPayment, deletePayment, markPaid } = usePayments(project.id)
   const [showAddPayment, setShowAddPayment] = useState(false)
   const [newPayment, setNewPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
   const [retainerAmountEdit, setRetainerAmountEdit] = useState(project.retainer_amount?.toString() ?? '')

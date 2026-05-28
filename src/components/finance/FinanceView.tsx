@@ -33,12 +33,6 @@ export default function FinanceView({ projects }: FinanceViewProps) {
 
   const paid = monthPayments.filter((p) => getEffectiveStatus(p) === 'paid')
   const overdue = payments.filter((p) => getEffectiveStatus(p) === 'overdue')
-  const upcoming = payments.filter((p) => {
-    const status = getEffectiveStatus(p)
-    if (status !== 'expected') return false
-    const pm = p.month ?? p.created_at.slice(0, 7)
-    return pm === selectedMonth
-  })
 
   const totalExpected = monthPayments.reduce((s, p) => s + p.amount, 0)
   const totalPaid = paid.reduce((s, p) => s + p.amount, 0)
