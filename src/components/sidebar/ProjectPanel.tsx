@@ -601,7 +601,17 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-xs font-bold text-gray-700">₪{p.amount.toFixed(0)}</span>
-                              {p.due_date && <span className="text-xs text-gray-400">due {new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>}
+                              <label className="relative cursor-pointer">
+                                <span className="text-xs text-gray-400 hover:text-[#007aff] transition-colors">
+                                  {p.due_date ? `expected ${new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : '+ add date'}
+                                </span>
+                                <input
+                                  type="date"
+                                  value={p.due_date ?? ''}
+                                  onChange={async (e) => { await updatePayment(p.id, { due_date: e.target.value || null }) }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                                />
+                              </label>
                               {p.invoice_ref && <span className="text-xs text-gray-400">#{p.invoice_ref}</span>}
                             </div>
                           </div>
