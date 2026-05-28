@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import type { Project } from '../../types'
+import { useState, useEffect } from 'react'
+import type { Project, ProjectFinancials } from '../../types'
 import { useAllPayments } from '../../hooks/usePayments'
+import { supabase } from '../../config/supabase'
 
 interface FinanceViewProps {
   projects: Project[]
@@ -17,30 +18,49 @@ function formatMonth(month: string) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 export default function FinanceView({ projects }: FinanceViewProps) {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
-  const { payments, loading, markPaid, getEffectiveStatus } = useAllPayments()
+  const { payments, loading: paymentsLoading, markPaid, getEffectiveStatus } = useAllPayments()
+  const [legacyFinancials, setLegacyFinancials] = useState<ProjectFinancials[]>([])
+  const [legacyLoading, setLegacyLoading] = useState(true)
 
+  useEffect(() => {
+    supabase.from('project_financials').select('*').order('month', { ascending: false })
+      .then(({ data }) => { if (data) setLegacyFinancials(data); setLegacyLoading(false) })
+  }, [])
+
+  const loading = paymentsLoading || legacyLoading
   const projectMap = new Map(projects.map((p) => [p.id, p]))
 
-  const allMonths = [...new Set(payments.map((p) => p.month ?? p.created_at.slice(0, 7)))].sort((a, b) => b.localeCompare(a))
-  if (!allMonths.includes(getCurrentMonth())) allMonths.unshift(getCurrentMonth())
+  // Collect all months from both sources
+  const paymentMonths = payments.map((p) => p.month ?? p.created_at.slice(0, 7))
+  const legacyMonths = legacyFinancials.map((f) => f.month)
+  const allMonths = [...new Set([...paymentMonths, ...legacyMonths, getCurrentMonth()])].sort((a, b) => b.localeCompare(a))
 
-  const isCurrentMonth = selectedMonth === getCurrentMonth()
-
+  // Payments for selected month
   const monthPayments = payments.filter((p) => (p.month ?? p.created_at.slice(0, 7)) === selectedMonth)
   const expectedThisMonth = monthPayments.filter((p) => getEffectiveStatus(p) !== 'paid')
     .sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
   const receivedThisMonth = monthPayments.filter((p) => getEffectiveStatus(p) === 'paid')
+
+  // Legacy records for selected month
+  const monthLegacy = legacyFinancials.filter((f) => f.month === selectedMonth)
+
+  // Overdue from any month
   const overdue = payments.filter((p) => getEffectiveStatus(p) === 'overdue')
 
-  const totalExpected = monthPayments.reduce((s, p) => s + p.amount, 0)
+  // Totals: new payments + legacy income
+  const legacyExpected = monthLegacy.reduce((s, f) => s + f.income, 0)
+  const legacyExpectedWithDate = monthLegacy.filter((f) => f.expected_date).reduce((s, f) => s + f.income, 0)
+  const totalExpected = monthPayments.reduce((s, p) => s + p.amount, 0) + legacyExpectedWithDate
   const totalReceived = receivedThisMonth.reduce((s, p) => s + p.amount, 0)
   const totalPending = expectedThisMonth.reduce((s, p) => s + p.amount, 0)
   const pct = totalExpected > 0 ? Math.round((totalReceived / totalExpected) * 100) : 0
+
+  const isCurrentMonth = selectedMonth === getCurrentMonth()
 
   if (loading) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
@@ -56,7 +76,8 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
             <button
               onClick={() => { const i = allMonths.indexOf(selectedMonth); if (i < allMonths.length - 1) setSelectedMonth(allMonths[i + 1]) }}
-              className="p-1.5 hover:bg-white rounded-lg transition-colors"
+              disabled={allMonths.indexOf(selectedMonth) >= allMonths.length - 1}
+              className={`p-1.5 rounded-lg transition-colors ${allMonths.indexOf(selectedMonth) < allMonths.length - 1 ? 'hover:bg-white' : 'opacity-30 cursor-not-allowed'}`}
             >
               <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -71,7 +92,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         </div>
 
-        {/* Budget vs Receipts */}
+        {/* Budget vs Receipts — only if there's payment data */}
         {totalExpected > 0 && (
           <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
             <div className="flex items-end justify-between">
@@ -133,7 +154,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {/* Expected this month */}
+        {/* Expected this month — new payments */}
         {expectedThisMonth.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -159,12 +180,40 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                       </div>
                     </div>
                     <span className="text-sm font-bold text-gray-700 shrink-0">₪{p.amount.toFixed(0)}</span>
-                    <button
-                      onClick={() => markPaid(p.id)}
-                      className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap"
-                    >
+                    <button onClick={() => markPaid(p.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
                       ✓ Received
                     </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Legacy financials for this month */}
+        {monthLegacy.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400" />
+              <h3 className="text-sm font-semibold text-gray-700">Records</h3>
+              <span className="text-xs text-gray-400 ml-auto">₪{legacyExpected.toFixed(0)}</span>
+            </div>
+            <div className="space-y-2">
+              {monthLegacy.map((f) => {
+                const project = projectMap.get(f.project_id)
+                const profit = f.income - f.expenses
+                return (
+                  <div key={f.id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
+                    {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{project?.title ?? 'Unknown'}</div>
+                      <div className="text-xs text-gray-400">
+                        Income ₪{f.income.toFixed(0)} · Exp ₪{f.expenses.toFixed(0)}
+                        {f.expected_date ? ` · expected ${formatDate(f.expected_date)}` : ''}
+                        {f.notes ? ` · ${f.notes}` : ''}
+                      </div>
+                    </div>
+                    <span className={`text-sm font-bold shrink-0 ${profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>₪{profit.toFixed(0)}</span>
                   </div>
                 )
               })}
@@ -203,9 +252,9 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {monthPayments.length === 0 && overdue.length === 0 && (
+        {monthPayments.length === 0 && monthLegacy.length === 0 && overdue.length === 0 && (
           <div className="text-center py-12 text-gray-400 text-sm">
-            No payments for {formatMonth(selectedMonth)}.<br />
+            No data for {formatMonth(selectedMonth)}.<br />
             <span className="text-xs">Add payments inside each project's Financials tab.</span>
           </div>
         )}
