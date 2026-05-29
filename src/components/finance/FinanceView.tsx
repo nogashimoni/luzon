@@ -12,6 +12,12 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+function addMonths(month: string, n: number): string {
+  const [y, m] = month.split('-').map(Number)
+  const d = new Date(y, m - 1 + n)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 function formatMonth(month: string) {
   const [y, m] = month.split('-')
   return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
@@ -34,33 +40,35 @@ export default function FinanceView({ projects }: FinanceViewProps) {
 
   const loading = paymentsLoading || legacyLoading
   const projectMap = new Map(projects.map((p) => [p.id, p]))
+  const currentMonth = getCurrentMonth()
+  const isFuture = selectedMonth > currentMonth
+  const isPast = selectedMonth < currentMonth
+  const isNow = selectedMonth === currentMonth
 
-  // Collect all months from both sources
-  const paymentMonths = payments.map((p) => p.month ?? p.created_at.slice(0, 7))
-  const legacyMonths = legacyFinancials.map((f) => f.month)
-  const allMonths = [...new Set([...paymentMonths, ...legacyMonths, getCurrentMonth()])].sort((a, b) => b.localeCompare(a))
+  // All months from both data sources
+  const dataMonths = [...new Set([
+    ...payments.map((p) => p.month ?? p.created_at.slice(0, 7)),
+    ...legacyFinancials.map((f) => f.month),
+  ])].sort((a, b) => b.localeCompare(a))
 
-  // Payments for selected month
+  // Payments for selected month (new system)
   const monthPayments = payments.filter((p) => (p.month ?? p.created_at.slice(0, 7)) === selectedMonth)
-  const expectedThisMonth = monthPayments.filter((p) => getEffectiveStatus(p) !== 'paid')
+  const receivedPayments = monthPayments.filter((p) => getEffectiveStatus(p) === 'paid')
+  const pendingPayments = monthPayments.filter((p) => getEffectiveStatus(p) !== 'paid')
     .sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
-  const receivedThisMonth = monthPayments.filter((p) => getEffectiveStatus(p) === 'paid')
 
   // Legacy records for selected month
   const monthLegacy = legacyFinancials.filter((f) => f.month === selectedMonth)
 
-  // Overdue from any month
-  const overdue = payments.filter((p) => getEffectiveStatus(p) === 'overdue')
+  // Overdue (all months, only show on current/past view)
+  const overdue = !isFuture ? payments.filter((p) => getEffectiveStatus(p) === 'overdue') : []
 
-  // Totals: new payments + legacy income
-  const legacyExpected = monthLegacy.reduce((s, f) => s + f.income, 0)
-  const legacyExpectedWithDate = monthLegacy.filter((f) => f.expected_date).reduce((s, f) => s + f.income, 0)
-  const totalExpected = monthPayments.reduce((s, p) => s + p.amount, 0) + legacyExpectedWithDate
-  const totalReceived = receivedThisMonth.reduce((s, p) => s + p.amount, 0)
-  const totalPending = expectedThisMonth.reduce((s, p) => s + p.amount, 0)
+  // Totals
+  const totalReceived = receivedPayments.reduce((s, p) => s + p.amount, 0)
+    + monthLegacy.reduce((s, f) => s + f.income, 0) // legacy income counts as received
+  const totalExpected = totalReceived + pendingPayments.reduce((s, p) => s + p.amount, 0)
   const pct = totalExpected > 0 ? Math.round((totalReceived / totalExpected) * 100) : 0
-
-  const isCurrentMonth = selectedMonth === getCurrentMonth()
+  const hasAnyData = monthPayments.length > 0 || monthLegacy.length > 0
 
   if (loading) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
@@ -68,67 +76,100 @@ export default function FinanceView({ projects }: FinanceViewProps) {
 
   return (
     <div className="h-full overflow-y-auto bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-5">
 
-        {/* Header + month selector */}
+        {/* Month navigation */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-lg font-bold text-gray-900 tracking-tight">Finance</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">Finance</h2>
+            {isFuture && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">Forecast</span>
+            )}
+            {isNow && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-600">This month</span>
+            )}
+          </div>
           <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
             <button
-              onClick={() => { const i = allMonths.indexOf(selectedMonth); if (i < allMonths.length - 1) setSelectedMonth(allMonths[i + 1]) }}
-              disabled={allMonths.indexOf(selectedMonth) >= allMonths.length - 1}
-              className={`p-1.5 rounded-lg transition-colors ${allMonths.indexOf(selectedMonth) < allMonths.length - 1 ? 'hover:bg-white' : 'opacity-30 cursor-not-allowed'}`}
+              onClick={() => setSelectedMonth(addMonths(selectedMonth, -1))}
+              className="p-1.5 hover:bg-white rounded-lg transition-colors"
             >
               <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <span className="text-sm font-semibold text-gray-800 px-2 min-w-[120px] text-center">{formatMonth(selectedMonth)}</span>
+            <span className="text-sm font-semibold text-gray-800 px-2 min-w-[130px] text-center">{formatMonth(selectedMonth)}</span>
             <button
-              onClick={() => { const i = allMonths.indexOf(selectedMonth); if (i > 0) setSelectedMonth(allMonths[i - 1]) }}
-              disabled={selectedMonth >= getCurrentMonth()}
-              className={`p-1.5 rounded-lg transition-colors ${selectedMonth < getCurrentMonth() ? 'hover:bg-white' : 'opacity-30 cursor-not-allowed'}`}
+              onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))}
+              className="p-1.5 hover:bg-white rounded-lg transition-colors"
             >
               <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
         </div>
 
-        {/* Budget vs Receipts — only if there's payment data */}
-        {totalExpected > 0 && (
+        {/* Month jumper — quick access to months with data */}
+        {dataMonths.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {[currentMonth, addMonths(currentMonth, 1), addMonths(currentMonth, 2)].map((m) => (
+              <button key={m} onClick={() => setSelectedMonth(m)}
+                className={`text-xs px-3 py-1 rounded-full whitespace-nowrap font-medium transition-colors ${selectedMonth === m ? 'bg-[#007aff] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                {m === currentMonth ? 'This month' : formatMonth(m).split(' ')[0]}
+              </button>
+            ))}
+            <div className="w-px bg-gray-200 mx-1" />
+            {dataMonths.slice(0, 6).map((m) => (
+              <button key={m} onClick={() => setSelectedMonth(m)}
+                className={`text-xs px-3 py-1 rounded-full whitespace-nowrap font-medium transition-colors ${selectedMonth === m ? 'bg-[#007aff] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                {formatMonth(m).split(' ')[0]}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Summary bar */}
+        {hasAnyData && (
           <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-xs text-gray-500 mb-0.5">Budget vs Receipts</div>
-                <div className="text-2xl font-bold text-gray-900">₪{totalReceived.toFixed(0)}</div>
-                <div className="text-xs text-gray-400">of ₪{totalExpected.toFixed(0)} expected</div>
+                <div className="text-xs text-gray-500 mb-0.5">
+                  {isFuture ? 'Forecast' : 'Received vs Expected'}
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {isFuture ? `₪${totalExpected.toFixed(0)}` : `₪${totalReceived.toFixed(0)}`}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {isFuture
+                    ? `expected in ${formatMonth(selectedMonth)}`
+                    : `of ₪${totalExpected.toFixed(0)} expected`}
+                </div>
               </div>
-              <div className={`text-3xl font-black ${pct >= 100 ? 'text-green-500' : pct >= 50 ? 'text-blue-500' : 'text-orange-400'}`}>
-                {pct}%
-              </div>
+              {!isFuture && (
+                <div className={`text-3xl font-black ${pct >= 100 ? 'text-green-500' : pct >= 50 ? 'text-blue-500' : 'text-orange-400'}`}>
+                  {pct}%
+                </div>
+              )}
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-              <div
-                className={`h-2.5 rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-orange-400'}`}
-                style={{ width: `${Math.min(pct, 100)}%` }}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-              <div>
-                <div className="text-xs text-gray-400">Expected</div>
-                <div className="text-sm font-bold text-gray-700">₪{totalExpected.toFixed(0)}</div>
+            {!isFuture && totalExpected > 0 && (
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-orange-400'}`}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
               </div>
-              <div>
-                <div className="text-xs text-gray-400">Received</div>
-                <div className="text-sm font-bold text-green-600">₪{totalReceived.toFixed(0)}</div>
+            )}
+            <div className="grid grid-cols-2 gap-2 pt-1 text-center">
+              <div className={`rounded-xl p-2 ${isFuture ? 'bg-blue-50' : 'bg-green-50'}`}>
+                <div className="text-xs text-gray-400">{isFuture ? 'Forecast' : 'Received'}</div>
+                <div className={`text-sm font-bold ${isFuture ? 'text-blue-600' : 'text-green-600'}`}>₪{(isFuture ? totalExpected : totalReceived).toFixed(0)}</div>
               </div>
-              <div>
+              <div className={`rounded-xl p-2 ${pendingPayments.length > 0 ? 'bg-orange-50' : 'bg-gray-100'}`}>
                 <div className="text-xs text-gray-400">Pending</div>
-                <div className="text-sm font-bold text-orange-500">₪{totalPending.toFixed(0)}</div>
+                <div className={`text-sm font-bold ${pendingPayments.length > 0 ? 'text-orange-500' : 'text-gray-400'}`}>₪{pendingPayments.reduce((s, p) => s + p.amount, 0).toFixed(0)}</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Overdue */}
+        {/* Overdue — only past/current */}
         {overdue.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -154,18 +195,18 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {/* Expected this month — new payments */}
-        {expectedThisMonth.length > 0 && (
+        {/* Pending / Expected */}
+        {pendingPayments.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
               <h3 className="text-sm font-semibold text-gray-700">
-                {isCurrentMonth ? 'Expected this month' : `Expected in ${formatMonth(selectedMonth)}`}
+                {isFuture ? `Forecast for ${formatMonth(selectedMonth)}` : isNow ? 'Expected this month' : 'Pending'}
               </h3>
-              <span className="text-xs text-gray-400 ml-auto">₪{totalPending.toFixed(0)}</span>
+              <span className="text-xs text-gray-400 ml-auto">₪{pendingPayments.reduce((s, p) => s + p.amount, 0).toFixed(0)}</span>
             </div>
             <div className="space-y-2">
-              {expectedThisMonth.map((p) => {
+              {pendingPayments.map((p) => {
                 const project = projectMap.get(p.project_id)
                 const status = getEffectiveStatus(p)
                 return (
@@ -180,9 +221,11 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                       </div>
                     </div>
                     <span className="text-sm font-bold text-gray-700 shrink-0">₪{p.amount.toFixed(0)}</span>
-                    <button onClick={() => markPaid(p.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
-                      ✓ Received
-                    </button>
+                    {!isFuture && (
+                      <button onClick={() => markPaid(p.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
+                        ✓ Received
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -190,13 +233,13 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {/* Legacy financials for this month */}
+        {/* Legacy records */}
         {monthLegacy.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-purple-400" />
               <h3 className="text-sm font-semibold text-gray-700">Records</h3>
-              <span className="text-xs text-gray-400 ml-auto">₪{legacyExpected.toFixed(0)}</span>
+              <span className="text-xs text-gray-400 ml-auto">₪{monthLegacy.reduce((s, f) => s + f.income, 0).toFixed(0)}</span>
             </div>
             <div className="space-y-2">
               {monthLegacy.map((f) => {
@@ -222,7 +265,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
         )}
 
         {/* Received */}
-        {receivedThisMonth.length > 0 && (
+        {receivedPayments.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-green-500" />
@@ -230,7 +273,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
               <span className="text-xs text-gray-400 ml-auto">₪{totalReceived.toFixed(0)}</span>
             </div>
             <div className="space-y-2">
-              {receivedThisMonth.map((p) => {
+              {receivedPayments.map((p) => {
                 const project = projectMap.get(p.project_id)
                 return (
                   <div key={p.id} className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
@@ -252,10 +295,12 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {monthPayments.length === 0 && monthLegacy.length === 0 && overdue.length === 0 && (
-          <div className="text-center py-12 text-gray-400 text-sm">
-            No data for {formatMonth(selectedMonth)}.<br />
-            <span className="text-xs">Add payments inside each project's Financials tab.</span>
+        {!hasAnyData && overdue.length === 0 && (
+          <div className="text-center py-16 text-gray-400 text-sm">
+            {isFuture
+              ? <><div className="text-2xl mb-2">📅</div>No payments scheduled for {formatMonth(selectedMonth)}.<br /><span className="text-xs">Add payments with future expected dates in each project's Financials tab.</span></>
+              : <><div className="text-2xl mb-2">💸</div>No data for {formatMonth(selectedMonth)}.<br /><span className="text-xs">Add payments inside each project's Financials tab.</span></>
+            }
           </div>
         )}
 
