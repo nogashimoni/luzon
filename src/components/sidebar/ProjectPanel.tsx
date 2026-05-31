@@ -503,7 +503,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             if (exists) return
                             const amount = parseFloat(retainerAmountEdit) || project.retainer_amount || 0
                             const dueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-                            await addPayment({ project_id: project.id, description: `Retainer – ${now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`, amount, due_date: dueDate, paid_date: null, status: 'expected', invoice_ref: null, month })
+                            await addPayment({ project_id: project.id, description: `Retainer – ${now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`, amount, work_deadline: null, due_date: dueDate, paid_date: null, status: 'expected', invoice_ref: null, month })
                           }}
                           className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
                         >
