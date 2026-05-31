@@ -52,6 +52,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   const { payments, loading: paymentsLoading, addPayment, updatePayment, deletePayment, markPaid } = usePayments(project.id)
   const [showAddPayment, setShowAddPayment] = useState(false)
   const [newPayment, setNewPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
+  const [paymentError, setPaymentError] = useState('')
   const [retainerAmountEdit, setRetainerAmountEdit] = useState(project.retainer_amount?.toString() ?? '')
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
   const [editPayment, setEditPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
@@ -608,7 +609,14 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                                 <input
                                   type="date"
                                   value={p.due_date ?? ''}
-                                  onChange={async (e) => { await updatePayment(p.id, { due_date: e.target.value || null }) }}
+                                  onChange={async (e) => {
+                                    const val = e.target.value
+                                    try {
+                                      await updatePayment(p.id, { due_date: val || null })
+                                    } catch (err) {
+                                      setPaymentError(err instanceof Error ? err.message : 'Failed to update date')
+                                    }
+                                  }}
                                   className="absolute inset-0 opacity-0 cursor-pointer w-full"
                                 />
                               </label>
@@ -667,19 +675,25 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                         onChange={(e) => setNewPayment((prev) => ({ ...prev, invoice_ref: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
                       />
+                      {paymentError && <p className="text-xs text-red-500">{paymentError}</p>}
                       <div className="flex gap-2">
                         <Button
                           onClick={async () => {
                             if (!newPayment.description.trim() || !newPayment.amount) return
-                            await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : null })
-                            setNewPayment({ description: '', amount: '', due_date: '', invoice_ref: '' })
-                            setShowAddPayment(false)
+                            setPaymentError('')
+                            try {
+                              await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : null })
+                              setNewPayment({ description: '', amount: '', due_date: '', invoice_ref: '' })
+                              setShowAddPayment(false)
+                            } catch (e) {
+                              setPaymentError(e instanceof Error ? e.message : 'Failed to save. Make sure migration 009 was run in Supabase.')
+                            }
                           }}
                           disabled={!newPayment.description.trim() || !newPayment.amount}
                         >
                           Add
                         </Button>
-                        <Button variant="secondary" onClick={() => setShowAddPayment(false)}>Cancel</Button>
+                        <Button variant="secondary" onClick={() => { setShowAddPayment(false); setPaymentError('') }}>Cancel</Button>
                       </div>
                     </div>
                   ) : (
