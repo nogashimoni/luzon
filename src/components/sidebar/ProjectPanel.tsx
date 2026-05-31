@@ -51,11 +51,11 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
   // Payments state
   const { payments, loading: paymentsLoading, addPayment, updatePayment, deletePayment, markPaid } = usePayments(project.id)
   const [showAddPayment, setShowAddPayment] = useState(false)
-  const [newPayment, setNewPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
+  const [newPayment, setNewPayment] = useState({ description: '', amount: '', work_deadline: '', due_date: '', invoice_ref: '' })
   const [paymentError, setPaymentError] = useState('')
   const [retainerAmountEdit, setRetainerAmountEdit] = useState(project.retainer_amount?.toString() ?? '')
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
-  const [editPayment, setEditPayment] = useState({ description: '', amount: '', due_date: '', invoice_ref: '' })
+  const [editPayment, setEditPayment] = useState({ description: '', amount: '', work_deadline: '', due_date: '', invoice_ref: '' })
 
   // Legacy financials (project_financials table)
   const [legacyMonths, setLegacyMonths] = useState<ProjectFinancials[]>([])
@@ -503,7 +503,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             if (exists) return
                             const amount = parseFloat(retainerAmountEdit) || project.retainer_amount || 0
                             const dueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-                            await addPayment({ project_id: project.id, description: `Retainer – ${now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`, amount, due_date: dueDate, paid_date: null, status: 'expected', invoice_ref: null, month })
+                            await addPayment({ project_id: project.id, description: `Retainer – ${now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`, amount, work_deadline: null, due_date: dueDate, paid_date: null, status: 'expected', invoice_ref: null, month })
                           }}
                           className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
                         >
@@ -556,20 +556,32 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                               onChange={(e) => setEditPayment((prev) => ({ ...prev, description: e.target.value }))}
                               className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
                             />
+                            <input
+                              type="number"
+                              value={editPayment.amount}
+                              onChange={(e) => setEditPayment((prev) => ({ ...prev, amount: e.target.value }))}
+                              placeholder="Amount (₪)"
+                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                            />
                             <div className="grid grid-cols-2 gap-2">
-                              <input
-                                type="number"
-                                value={editPayment.amount}
-                                onChange={(e) => setEditPayment((prev) => ({ ...prev, amount: e.target.value }))}
-                                placeholder="Amount (₪)"
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
-                              />
-                              <input
-                                type="date"
-                                value={editPayment.due_date}
-                                onChange={(e) => setEditPayment((prev) => ({ ...prev, due_date: e.target.value }))}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
-                              />
+                              <div>
+                                <label className="text-xs text-gray-500 mb-1 block">Deadline</label>
+                                <input
+                                  type="date"
+                                  value={editPayment.work_deadline}
+                                  onChange={(e) => setEditPayment((prev) => ({ ...prev, work_deadline: e.target.value }))}
+                                  className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-500 mb-1 block">Expected payment</label>
+                                <input
+                                  type="date"
+                                  value={editPayment.due_date}
+                                  onChange={(e) => setEditPayment((prev) => ({ ...prev, due_date: e.target.value }))}
+                                  className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                                />
+                              </div>
                             </div>
                             <input
                               type="text"
@@ -584,6 +596,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                                   await updatePayment(p.id, {
                                     description: editPayment.description.trim(),
                                     amount: parseFloat(editPayment.amount) || p.amount,
+                                    work_deadline: editPayment.work_deadline || null,
                                     due_date: editPayment.due_date || null,
                                     invoice_ref: editPayment.invoice_ref.trim() || null,
                                   })
@@ -600,11 +613,14 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                         <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border ${effectiveStatus === 'paid' ? 'bg-green-50 border-green-100' : effectiveStatus === 'overdue' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               <span className="text-xs font-bold text-gray-700">₪{p.amount.toFixed(0)}</span>
+                              {p.work_deadline && (
+                                <span className="text-xs text-gray-400">deadline {new Date(p.work_deadline + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                              )}
                               <label className="relative cursor-pointer">
                                 <span className="text-xs text-gray-400 hover:text-[#007aff] transition-colors">
-                                  {p.due_date ? `expected ${new Date(p.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : '+ add date'}
+                                  {p.due_date ? `payment ${new Date(p.due_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : '+ payment date'}
                                 </span>
                                 <input
                                   type="date"
@@ -628,7 +644,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                               {effectiveStatus === 'paid' ? 'Paid' : effectiveStatus === 'overdue' ? 'Overdue' : 'Pending'}
                             </span>
                             <button
-                              onClick={() => { setEditingPaymentId(p.id); setEditPayment({ description: p.description, amount: p.amount.toString(), due_date: p.due_date ?? '', invoice_ref: p.invoice_ref ?? '' }) }}
+                              onClick={() => { setEditingPaymentId(p.id); setEditPayment({ description: p.description, amount: p.amount.toString(), work_deadline: p.work_deadline ?? '', due_date: p.due_date ?? '', invoice_ref: p.invoice_ref ?? '' }) }}
                               className="text-xs text-[#007aff] hover:underline font-medium"
                             >Edit</button>
                             {effectiveStatus !== 'paid' && (
@@ -652,21 +668,32 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                         onChange={(e) => setNewPayment((prev) => ({ ...prev, description: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
                       />
+                      <input
+                        type="number"
+                        placeholder="Amount (₪)"
+                        value={newPayment.amount}
+                        onChange={(e) => setNewPayment((prev) => ({ ...prev, amount: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                      />
                       <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="number"
-                          placeholder="Amount (₪)"
-                          value={newPayment.amount}
-                          onChange={(e) => setNewPayment((prev) => ({ ...prev, amount: e.target.value }))}
-                          className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
-                        />
-                        <input
-                          type="date"
-                          placeholder="Due date"
-                          value={newPayment.due_date}
-                          onChange={(e) => setNewPayment((prev) => ({ ...prev, due_date: e.target.value }))}
-                          className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
-                        />
+                        <div>
+                          <label className="text-xs text-gray-500 mb-1 block">Deadline (project)</label>
+                          <input
+                            type="date"
+                            value={newPayment.work_deadline}
+                            onChange={(e) => setNewPayment((prev) => ({ ...prev, work_deadline: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 mb-1 block">Expected payment</label>
+                          <input
+                            type="date"
+                            value={newPayment.due_date}
+                            onChange={(e) => setNewPayment((prev) => ({ ...prev, due_date: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#007aff]"
+                          />
+                        </div>
                       </div>
                       <input
                         type="text"
@@ -682,8 +709,8 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             if (!newPayment.description.trim() || !newPayment.amount) return
                             setPaymentError('')
                             try {
-                              await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : null })
-                              setNewPayment({ description: '', amount: '', due_date: '', invoice_ref: '' })
+                              await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), work_deadline: newPayment.work_deadline || null, due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : (newPayment.work_deadline ? newPayment.work_deadline.slice(0, 7) : null) })
+                              setNewPayment({ description: '', amount: '', work_deadline: '', due_date: '', invoice_ref: '' })
                               setShowAddPayment(false)
                             } catch (e) {
                               setPaymentError(e instanceof Error ? e.message : 'Failed to save. Make sure migration 009 was run in Supabase.')

@@ -28,11 +28,13 @@ export function usePayments(projectId: string) {
   async function addPayment(payment: Omit<ProjectPayment, 'id' | 'created_at' | 'updated_at'>) {
     const { error } = await supabase.from('project_payments').insert(payment)
     if (error) throw error
+    await fetchPayments()
   }
 
-  async function updatePayment(id: string, updates: Partial<Pick<ProjectPayment, 'description' | 'amount' | 'due_date' | 'paid_date' | 'status' | 'invoice_ref'>>) {
+  async function updatePayment(id: string, updates: Partial<Pick<ProjectPayment, 'description' | 'amount' | 'work_deadline' | 'due_date' | 'paid_date' | 'status' | 'invoice_ref'>>) {
     const { error } = await supabase.from('project_payments').update(updates).eq('id', id)
     if (error) throw error
+    await fetchPayments()
   }
 
   async function deletePayment(id: string) {
@@ -41,7 +43,9 @@ export function usePayments(projectId: string) {
   }
 
   async function markPaid(id: string) {
-    await updatePayment(id, { status: 'paid', paid_date: new Date().toISOString().slice(0, 10) })
+    const { error } = await supabase.from('project_payments').update({ status: 'paid', paid_date: new Date().toISOString().slice(0, 10) }).eq('id', id)
+    if (error) throw error
+    await fetchPayments()
   }
 
   return { payments, loading, addPayment, updatePayment, deletePayment, markPaid }

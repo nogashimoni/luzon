@@ -33,7 +33,8 @@ export interface ProjectPayment {
   project_id: string
   description: string
   amount: number
-  due_date: string | null
+  work_deadline: string | null  // when the work is due
+  due_date: string | null       // when payment is expected
   paid_date: string | null
   status: PaymentStatus
   invoice_ref: string | null
