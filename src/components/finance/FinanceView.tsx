@@ -42,7 +42,6 @@ export default function FinanceView({ projects }: FinanceViewProps) {
   const projectMap = new Map(projects.map((p) => [p.id, p]))
   const currentMonth = getCurrentMonth()
   const isFuture = selectedMonth > currentMonth
-  const isPast = selectedMonth < currentMonth
   const isNow = selectedMonth === currentMonth
 
   // All months from both data sources
