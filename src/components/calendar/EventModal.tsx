@@ -69,6 +69,8 @@ export default function EventModal({
     initialData?.assignee_user_ids ?? []
   )
 
+  const [projectSearch, setProjectSearch] = useState('')
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
   const [creatingProject, setCreatingProject] = useState(false)
   const [newProjectTitle, setNewProjectTitle] = useState('')
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
@@ -159,18 +161,70 @@ export default function EventModal({
           <label className="block text-sm font-semibold text-gray-700 mb-1.5 tracking-tight">Project</label>
           {!creatingProject ? (
             <div className="flex gap-2">
-              <select
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#007aff]/20 focus:border-[#007aff] outline-none text-gray-900 bg-white transition-all"
-              >
-                <option value="">No project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
+              {/* Searchable project picker */}
+              <div className="relative flex-1">
+                {(() => {
+                  const activeProjects = projects.filter((p) => p.status !== 'completed')
+                  const selectedProject = activeProjects.find((p) => p.id === projectId)
+                  const filtered = activeProjects.filter((p) =>
+                    p.title.toLowerCase().includes(projectSearch.toLowerCase())
+                  )
+                  return (
+                    <>
+                      <div
+                        className="flex items-center gap-2 w-full px-4 py-2.5 border border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 bg-white"
+                        onClick={() => { setProjectDropdownOpen(true); setProjectSearch('') }}
+                      >
+                        {selectedProject && (
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedProject.color }} />
+                        )}
+                        {projectDropdownOpen ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={projectSearch}
+                            onChange={(e) => setProjectSearch(e.target.value)}
+                            placeholder="Search project..."
+                            className="flex-1 outline-none text-sm text-gray-900 bg-transparent"
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={() => setTimeout(() => setProjectDropdownOpen(false), 150)}
+                          />
+                        ) : (
+                          <span className="flex-1 text-sm text-gray-900">
+                            {selectedProject ? selectedProject.title : 'No project'}
+                          </span>
+                        )}
+                        <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                      {projectDropdownOpen && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                          <button
+                            type="button"
+                            onMouseDown={() => { setProjectId(''); setProjectDropdownOpen(false) }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50"
+                          >
+                            No project
+                          </button>
+                          {filtered.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onMouseDown={() => { setProjectId(p.id); setProjectDropdownOpen(false); setProjectSearch('') }}
+                              className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 hover:bg-gray-50 ${projectId === p.id ? 'bg-blue-50 text-[#007aff] font-medium' : 'text-gray-900'}`}
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              {p.title}
+                            </button>
+                          ))}
+                          {filtered.length === 0 && (
+                            <div className="px-4 py-3 text-sm text-gray-400">No results</div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
               {onCreateProject && (
                 <button
                   type="button"
