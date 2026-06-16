@@ -710,7 +710,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             if (!newPayment.description.trim() || !newPayment.amount) return
                             setPaymentError('')
                             try {
-                              await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), work_deadline: newPayment.work_deadline || null, due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : (newPayment.work_deadline ? newPayment.work_deadline.slice(0, 7) : null) })
+                              await addPayment({ project_id: project.id, description: newPayment.description.trim(), amount: parseFloat(newPayment.amount), work_deadline: newPayment.work_deadline || null, due_date: newPayment.due_date || null, paid_date: null, status: 'expected', invoice_ref: newPayment.invoice_ref.trim() || null, month: newPayment.due_date ? newPayment.due_date.slice(0, 7) : null })
                               setNewPayment({ description: '', amount: '', work_deadline: '', due_date: '', invoice_ref: '' })
                               setShowAddPayment(false)
                             } catch (e) {
