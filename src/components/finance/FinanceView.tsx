@@ -44,10 +44,13 @@ export default function FinanceView({ projects }: FinanceViewProps) {
   const isFuture = selectedMonth > currentMonth
   const isNow = selectedMonth === currentMonth
 
+  // Legacy records are grouped by their expected receipt date when set, otherwise their recorded month
+  const legacyMonth = (f: ProjectFinancials) => f.expected_date ? f.expected_date.slice(0, 7) : f.month
+
   // All months from both data sources
   const dataMonths = [...new Set([
     ...payments.map((p) => p.month ?? p.created_at.slice(0, 7)),
-    ...legacyFinancials.map((f) => f.month),
+    ...legacyFinancials.map(legacyMonth),
   ])].sort((a, b) => b.localeCompare(a))
 
   // Payments for selected month (new system)
@@ -57,7 +60,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
     .sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
 
   // Legacy records for selected month
-  const monthLegacy = legacyFinancials.filter((f) => f.month === selectedMonth)
+  const monthLegacy = legacyFinancials.filter((f) => legacyMonth(f) === selectedMonth)
 
   // Overdue (all months, only show on current/past view)
   const overdue = !isFuture ? payments.filter((p) => getEffectiveStatus(p) === 'overdue') : []
