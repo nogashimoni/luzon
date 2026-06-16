@@ -62,9 +62,6 @@ export default function FinanceView({ projects }: FinanceViewProps) {
   // Legacy records for selected month
   const monthLegacy = legacyFinancials.filter((f) => legacyMonth(f) === selectedMonth)
 
-  // Overdue (all months, only show on current/past view)
-  const overdue = !isFuture ? payments.filter((p) => getEffectiveStatus(p) === 'overdue') : []
-
   // Totals
   const totalReceived = receivedPayments.reduce((s, p) => s + p.amount, 0)
     + monthLegacy.reduce((s, f) => s + f.income, 0) // legacy income counts as received
@@ -171,32 +168,6 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {/* Overdue — only past/current */}
-        {overdue.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
-              <h3 className="text-sm font-semibold text-red-600">Overdue ({overdue.length})</h3>
-            </div>
-            <div className="space-y-2">
-              {overdue.map((p) => {
-                const project = projectMap.get(p.project_id)
-                return (
-                  <div key={p.id} className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-                    {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
-                      <div className="text-xs text-gray-400">{project?.title} · expected {p.due_date ? formatDate(p.due_date) : '—'}</div>
-                    </div>
-                    <span className="text-sm font-bold text-red-600 shrink-0">₪{p.amount.toFixed(0)}</span>
-                    <button onClick={() => markPaid(p.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shrink-0">✓ Received</button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Pending / Expected */}
         {pendingPayments.length > 0 && (
           <div>
@@ -297,7 +268,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
           </div>
         )}
 
-        {!hasAnyData && overdue.length === 0 && (
+        {!hasAnyData && (
           <div className="text-center py-16 text-gray-400 text-sm">
             {isFuture
               ? <><div className="text-2xl mb-2">📅</div>No payments scheduled for {formatMonth(selectedMonth)}.<br /><span className="text-xs">Add payments with future expected dates in each project's Financials tab.</span></>
