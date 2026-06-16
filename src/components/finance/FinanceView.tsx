@@ -74,6 +74,29 @@ export default function FinanceView({ projects }: FinanceViewProps) {
   const pct = totalExpected > 0 ? Math.round((totalReceived / totalExpected) * 100) : 0
   const hasAnyData = monthPayments.length > 0 || monthLegacy.length > 0
 
+  // Group pending/forecast items by project so a project with several small payments
+  // shows up as one combined line, expandable to see the breakdown
+  type PendingItem = { id: string; description: string; amount: number; due_date: string | null; invoice_ref: string | null; isLegacy: boolean; status: ReturnType<typeof getEffectiveStatus> | 'expected' }
+  const pendingByProject = new Map<string, PendingItem[]>()
+  for (const item of pendingPayments) {
+    const list = pendingByProject.get(item.project_id) ?? []
+    list.push({ id: item.id, description: item.description, amount: item.amount, due_date: item.due_date, invoice_ref: item.invoice_ref, isLegacy: false, status: getEffectiveStatus(item) })
+    pendingByProject.set(item.project_id, list)
+  }
+  for (const f of legacyForecast) {
+    const list = pendingByProject.get(f.project_id) ?? []
+    list.push({ id: f.id, description: f.notes || 'Expected payment', amount: f.income, due_date: f.expected_date, invoice_ref: null, isLegacy: true, status: 'expected' })
+    pendingByProject.set(f.project_id, list)
+  }
+  const pendingGroups = [...pendingByProject.entries()]
+    .map(([projectId, items]) => ({
+      projectId,
+      items: items.sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? '')),
+      total: items.reduce((s, i) => s + i.amount, 0),
+      earliestDue: items.reduce((min, i) => (i.due_date && (!min || i.due_date < min) ? i.due_date : min), '' as string),
+    }))
+    .sort((a, b) => a.earliestDue.localeCompare(b.earliestDue))
+
   if (loading) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-sm">Loading...</div>
   }
@@ -186,43 +209,63 @@ export default function FinanceView({ projects }: FinanceViewProps) {
               </span>
             </div>
             <div className="space-y-2">
-              {pendingPayments.map((p) => {
-                const project = projectMap.get(p.project_id)
-                const status = getEffectiveStatus(p)
-                return (
-                  <div key={p.id} className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${status === 'overdue' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
-                    {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{p.description}</div>
-                      <div className="text-xs text-gray-400">
-                        {project?.title}
-                        {p.due_date ? ` · expected ${formatDate(p.due_date)}` : ''}
-                        {p.invoice_ref ? ` · #${p.invoice_ref}` : ''}
+              {pendingGroups.map(({ projectId, items, total }) => {
+                const project = projectMap.get(projectId)
+                const hasOverdue = items.some((i) => i.status === 'overdue')
+
+                // Single payment for this project — render as a plain row, same as before
+                if (items.length === 1) {
+                  const item = items[0]
+                  return (
+                    <div key={item.id} className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${item.status === 'overdue' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
+                      {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">{item.description}</div>
+                        <div className="text-xs text-gray-400">
+                          {project?.title}
+                          {item.due_date ? ` · expected ${formatDate(item.due_date)}` : ''}
+                          {item.invoice_ref ? ` · #${item.invoice_ref}` : ''}
+                        </div>
                       </div>
+                      <span className="text-sm font-bold text-gray-700 shrink-0">₪{item.amount.toFixed(0)}</span>
+                      {!isFuture && !item.isLegacy && (
+                        <button onClick={() => markPaid(item.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
+                          ✓ Received
+                        </button>
+                      )}
                     </div>
-                    <span className="text-sm font-bold text-gray-700 shrink-0">₪{p.amount.toFixed(0)}</span>
-                    {!isFuture && (
-                      <button onClick={() => markPaid(p.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
-                        ✓ Received
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-              {legacyForecast.map((f) => {
-                const project = projectMap.get(f.project_id)
+                  )
+                }
+
+                // Several payments for the same project — show one combined row, expandable for the breakdown
                 return (
-                  <div key={f.id} className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-white border-gray-200">
-                    {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 truncate">{f.notes || project?.title || 'Unknown'}</div>
-                      <div className="text-xs text-gray-400">
-                        {project?.title}
-                        {f.expected_date ? ` · expected ${formatDate(f.expected_date)}` : ''}
+                  <details key={projectId} className={`group rounded-xl border overflow-hidden ${hasOverdue ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
+                    <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                      {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">{project?.title ?? 'Unknown'}</div>
+                        <div className="text-xs text-gray-400">{items.length} payments</div>
                       </div>
+                      <span className="text-sm font-bold text-gray-700 shrink-0">₪{total.toFixed(0)}</span>
+                      <svg className="w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </summary>
+                    <div className="border-t border-gray-100 divide-y divide-gray-100">
+                      {items.map((item) => (
+                        <div key={item.id} className={`flex items-center gap-3 pl-9 pr-4 py-2 ${item.status === 'overdue' ? 'bg-red-50' : ''}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-700 truncate">{item.description}</div>
+                            {item.due_date && <div className="text-xs text-gray-400">expected {formatDate(item.due_date)}</div>}
+                          </div>
+                          <span className="text-xs font-semibold text-gray-600 shrink-0">₪{item.amount.toFixed(0)}</span>
+                          {!isFuture && !item.isLegacy && (
+                            <button onClick={() => markPaid(item.id)} className="text-xs px-2 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
+                              ✓
+                            </button>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <span className="text-sm font-bold text-gray-700 shrink-0">₪{f.income.toFixed(0)}</span>
-                  </div>
+                  </details>
                 )
               })}
             </div>
