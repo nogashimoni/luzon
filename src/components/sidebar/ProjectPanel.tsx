@@ -598,6 +598,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                                     amount: parseFloat(editPayment.amount) || p.amount,
                                     work_deadline: editPayment.work_deadline || null,
                                     due_date: editPayment.due_date || null,
+                                    month: editPayment.due_date ? editPayment.due_date.slice(0, 7) : null,
                                     invoice_ref: editPayment.invoice_ref.trim() || null,
                                   })
                                   setEditingPaymentId(null)
@@ -628,7 +629,7 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                                   onChange={async (e) => {
                                     const val = e.target.value
                                     try {
-                                      await updatePayment(p.id, { due_date: val || null })
+                                      await updatePayment(p.id, { due_date: val || null, month: val ? val.slice(0, 7) : null })
                                     } catch (err) {
                                       setPaymentError(err instanceof Error ? err.message : 'Failed to update date')
                                     }

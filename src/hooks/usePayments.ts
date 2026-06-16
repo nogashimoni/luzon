@@ -31,7 +31,7 @@ export function usePayments(projectId: string) {
     await fetchPayments()
   }
 
-  async function updatePayment(id: string, updates: Partial<Pick<ProjectPayment, 'description' | 'amount' | 'work_deadline' | 'due_date' | 'paid_date' | 'status' | 'invoice_ref'>>) {
+  async function updatePayment(id: string, updates: Partial<Pick<ProjectPayment, 'description' | 'amount' | 'work_deadline' | 'due_date' | 'paid_date' | 'status' | 'invoice_ref' | 'month'>>) {
     const { error } = await supabase.from('project_payments').update(updates).eq('id', id)
     if (error) throw error
     await fetchPayments()
