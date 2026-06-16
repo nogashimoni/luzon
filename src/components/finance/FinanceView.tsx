@@ -61,11 +61,16 @@ export default function FinanceView({ projects }: FinanceViewProps) {
 
   // Legacy records for selected month
   const monthLegacy = legacyFinancials.filter((f) => legacyMonth(f) === selectedMonth)
+  // Future legacy records haven't been collected yet — show them in the Forecast list, not as already received
+  const legacyForecast = isFuture ? monthLegacy : []
+  const legacyReceived = isFuture ? [] : monthLegacy
 
   // Totals
   const totalReceived = receivedPayments.reduce((s, p) => s + p.amount, 0)
-    + monthLegacy.reduce((s, f) => s + f.income, 0) // legacy income counts as received
-  const totalExpected = totalReceived + pendingPayments.reduce((s, p) => s + p.amount, 0)
+    + legacyReceived.reduce((s, f) => s + f.income, 0)
+  const totalExpected = totalReceived
+    + pendingPayments.reduce((s, p) => s + p.amount, 0)
+    + legacyForecast.reduce((s, f) => s + f.income, 0)
   const pct = totalExpected > 0 ? Math.round((totalReceived / totalExpected) * 100) : 0
   const hasAnyData = monthPayments.length > 0 || monthLegacy.length > 0
 
@@ -160,23 +165,25 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                 <div className="text-xs text-gray-400">{isFuture ? 'Forecast' : 'Received'}</div>
                 <div className={`text-sm font-bold ${isFuture ? 'text-blue-600' : 'text-green-600'}`}>₪{(isFuture ? totalExpected : totalReceived).toFixed(0)}</div>
               </div>
-              <div className={`rounded-xl p-2 ${pendingPayments.length > 0 ? 'bg-orange-50' : 'bg-gray-100'}`}>
+              <div className={`rounded-xl p-2 ${pendingPayments.length + legacyForecast.length > 0 ? 'bg-orange-50' : 'bg-gray-100'}`}>
                 <div className="text-xs text-gray-400">Pending</div>
-                <div className={`text-sm font-bold ${pendingPayments.length > 0 ? 'text-orange-500' : 'text-gray-400'}`}>₪{pendingPayments.reduce((s, p) => s + p.amount, 0).toFixed(0)}</div>
+                <div className={`text-sm font-bold ${pendingPayments.length + legacyForecast.length > 0 ? 'text-orange-500' : 'text-gray-400'}`}>₪{(pendingPayments.reduce((s, p) => s + p.amount, 0) + legacyForecast.reduce((s, f) => s + f.income, 0)).toFixed(0)}</div>
               </div>
             </div>
           </div>
         )}
 
         {/* Pending / Expected */}
-        {pendingPayments.length > 0 && (
+        {(pendingPayments.length > 0 || legacyForecast.length > 0) && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-blue-500" />
               <h3 className="text-sm font-semibold text-gray-700">
                 {isFuture ? `Forecast for ${formatMonth(selectedMonth)}` : isNow ? 'Expected this month' : 'Pending'}
               </h3>
-              <span className="text-xs text-gray-400 ml-auto">₪{pendingPayments.reduce((s, p) => s + p.amount, 0).toFixed(0)}</span>
+              <span className="text-xs text-gray-400 ml-auto">
+                ₪{(pendingPayments.reduce((s, p) => s + p.amount, 0) + legacyForecast.reduce((s, f) => s + f.income, 0)).toFixed(0)}
+              </span>
             </div>
             <div className="space-y-2">
               {pendingPayments.map((p) => {
@@ -202,20 +209,36 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                   </div>
                 )
               })}
+              {legacyForecast.map((f) => {
+                const project = projectMap.get(f.project_id)
+                return (
+                  <div key={f.id} className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-white border-gray-200">
+                    {project && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.color }} />}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">{f.notes || project?.title || 'Unknown'}</div>
+                      <div className="text-xs text-gray-400">
+                        {project?.title}
+                        {f.expected_date ? ` · expected ${formatDate(f.expected_date)}` : ''}
+                      </div>
+                    </div>
+                    <span className="text-sm font-bold text-gray-700 shrink-0">₪{f.income.toFixed(0)}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
 
-        {/* Legacy records */}
-        {monthLegacy.length > 0 && (
+        {/* Legacy records (past/current months only — future ones show in Forecast above) */}
+        {legacyReceived.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-purple-400" />
               <h3 className="text-sm font-semibold text-gray-700">Records</h3>
-              <span className="text-xs text-gray-400 ml-auto">₪{monthLegacy.reduce((s, f) => s + f.income, 0).toFixed(0)}</span>
+              <span className="text-xs text-gray-400 ml-auto">₪{legacyReceived.reduce((s, f) => s + f.income, 0).toFixed(0)}</span>
             </div>
             <div className="space-y-2">
-              {monthLegacy.map((f) => {
+              {legacyReceived.map((f) => {
                 const project = projectMap.get(f.project_id)
                 const profit = f.income - f.expenses
                 return (
