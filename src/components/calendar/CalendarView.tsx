@@ -8,6 +8,7 @@ import type { EventClickArg, DateSelectArg, EventDropArg, EventContentArg } from
 import type { EventResizeDoneArg } from '@fullcalendar/interaction'
 import type { CalendarEvent, Project, ProjectType } from '../../types'
 import EventModal from './EventModal'
+import { getHebrewHolidayEvents, getHebrewHolidayLabelEvents } from '../../utils/hebrewHolidays'
 
 interface CalendarViewProps {
   events: CalendarEvent[]
@@ -85,6 +86,7 @@ export default function CalendarView({
   }
 
   function handleEventClick(info: EventClickArg) {
+    if (info.event.extendedProps.isHoliday) return
     const calEvent = info.event.extendedProps.calendarEvent as CalendarEvent
     setEditing(calEvent)
   }
@@ -107,9 +109,11 @@ export default function CalendarView({
   }
 
   function renderEventContent(eventInfo: EventContentArg) {
+    if (eventInfo.event.extendedProps.isHoliday) {
+      return <div className="text-xs font-medium text-amber-600 px-1 truncate">{eventInfo.event.title}</div>
+    }
     const calEvent = eventInfo.event.extendedProps.calendarEvent as CalendarEvent | undefined
     if (!calEvent) {
-      // Fallback for events without full data
       return <div className="p-1 text-xs">{eventInfo.event.title}</div>
     }
 
@@ -168,7 +172,11 @@ export default function CalendarView({
             : 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
         }}
         height="100%"
-        events={fcEvents}
+        eventSources={[
+          { events: fcEvents },
+          { events: getHebrewHolidayEvents() },
+          { events: getHebrewHolidayLabelEvents() },
+        ]}
         editable
         selectable
         selectMirror
