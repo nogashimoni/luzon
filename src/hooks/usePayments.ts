@@ -77,12 +77,13 @@ export function useAllPayments() {
     await supabase.from('project_payments').update({ status: 'paid', paid_date: new Date().toISOString().slice(0, 10) }).eq('id', id)
   }
 
-  // Auto-mark overdue: payments past due_date that are still 'expected'
-  function getEffectiveStatus(payment: ProjectPayment): PaymentStatus {
-    if (payment.status === 'paid') return 'paid'
-    if (payment.due_date && new Date(payment.due_date) < new Date()) return 'overdue'
-    return 'expected'
+  async function unmarkPaid(id: string) {
+    await supabase.from('project_payments').update({ status: 'expected', paid_date: null }).eq('id', id)
   }
 
-  return { payments, loading, markPaid, getEffectiveStatus }
+  function getEffectiveStatus(payment: ProjectPayment): PaymentStatus {
+    return payment.status
+  }
+
+  return { payments, loading, markPaid, unmarkPaid, getEffectiveStatus }
 }

@@ -29,7 +29,7 @@ function formatDate(d: string) {
 
 export default function FinanceView({ projects }: FinanceViewProps) {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
-  const { payments, loading: paymentsLoading, markPaid, getEffectiveStatus } = useAllPayments()
+  const { payments, loading: paymentsLoading, markPaid, unmarkPaid, getEffectiveStatus } = useAllPayments()
   const [legacyFinancials, setLegacyFinancials] = useState<ProjectFinancials[]>([])
   const [legacyLoading, setLegacyLoading] = useState(true)
 
@@ -228,7 +228,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                         </div>
                       </div>
                       <span className="text-sm font-bold text-gray-700 shrink-0">₪{item.amount.toFixed(0)}</span>
-                      {!isFuture && !item.isLegacy && (
+                      {!item.isLegacy && (
                         <button onClick={() => markPaid(item.id)} className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
                           ✓ Received
                         </button>
@@ -257,7 +257,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                             {item.due_date && <div className="text-xs text-gray-400">expected {formatDate(item.due_date)}</div>}
                           </div>
                           <span className="text-xs font-semibold text-gray-600 shrink-0">₪{item.amount.toFixed(0)}</span>
-                          {!isFuture && !item.isLegacy && (
+                          {!item.isLegacy && (
                             <button onClick={() => markPaid(item.id)} className="text-xs px-2 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shrink-0 whitespace-nowrap">
                               ✓
                             </button>
@@ -326,7 +326,7 @@ export default function FinanceView({ projects }: FinanceViewProps) {
                       </div>
                     </div>
                     <span className="text-sm font-bold text-green-700 shrink-0">₪{p.amount.toFixed(0)}</span>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">✓</span>
+                    <button onClick={() => unmarkPaid(p.id)} className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 transition-colors shrink-0 font-semibold">✓</button>
                   </div>
                 )
               })}
