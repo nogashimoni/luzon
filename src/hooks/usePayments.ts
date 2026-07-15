@@ -75,10 +75,12 @@ export function useAllPayments() {
 
   async function markPaid(id: string) {
     await supabase.from('project_payments').update({ status: 'paid', paid_date: new Date().toISOString().slice(0, 10) }).eq('id', id)
+    await fetchAll()
   }
 
   async function unmarkPaid(id: string) {
     await supabase.from('project_payments').update({ status: 'expected', paid_date: null }).eq('id', id)
+    await fetchAll()
   }
 
   function getEffectiveStatus(payment: ProjectPayment): PaymentStatus {
