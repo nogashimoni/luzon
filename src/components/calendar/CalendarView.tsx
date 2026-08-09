@@ -194,7 +194,7 @@ export default function CalendarView({
         snapDuration="00:15:00"
         selectMinDistance={5}
         unselectAuto={true}
-        selectOverlap={(event) => !event.allDay}
+        selectOverlap={(event) => event.allDay}
         allDaySlot
         eventDisplay="block"
         eventContent={renderEventContent}
