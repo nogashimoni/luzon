@@ -540,7 +540,12 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                   {(() => {
                     const pendingPayments = payments
                       .filter((p) => p.status !== 'paid')
-                      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+                      .sort((a, b) => {
+                        if (!a.due_date && !b.due_date) return 0
+                        if (!a.due_date) return 1
+                        if (!b.due_date) return -1
+                        return a.due_date.localeCompare(b.due_date)
+                      })
                     const paidPayments = payments
                       .filter((p) => p.status === 'paid')
                       .sort((a, b) => (b.paid_date ?? '').localeCompare(a.paid_date ?? ''))
@@ -557,6 +562,9 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                         : p.due_date && new Date(p.due_date) < new Date() ? 'overdue'
                         : 'expected'
                       const showPaidHeader = idx === paidStartIndex && paidPayments.length > 0
+                      const thisMonth = p.due_date ? p.due_date.slice(0, 7) : null
+                      const prevMonth = idx > 0 ? (allSorted[idx - 1].due_date ? allSorted[idx - 1].due_date!.slice(0, 7) : null) : '__start__'
+                      const showMonthHeader = !showPaidHeader && idx < paidStartIndex && thisMonth !== prevMonth
 
                       if (editingPaymentId === p.id) {
                         return (
@@ -566,6 +574,15 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                               <div className="flex-1 h-px bg-gray-200" />
                               <span className="text-xs font-semibold text-gray-400">שולם</span>
                               <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+                          )}
+                          {showMonthHeader && (
+                            <div className="flex items-center gap-2 my-2">
+                              <div className="flex-1 h-px bg-gray-100" />
+                              <span className="text-xs font-medium text-gray-400">
+                                {thisMonth ? new Date(thisMonth + '-01').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }) : 'ללא תאריך'}
+                              </span>
+                              <div className="flex-1 h-px bg-gray-100" />
                             </div>
                           )}
                           <div className="border border-[#007aff] rounded-xl p-3 space-y-2">
@@ -637,6 +654,15 @@ export default function ProjectPanel({ project, events, onClose, onUpdate, onDel
                             <div className="flex-1 h-px bg-gray-200" />
                             <span className="text-xs font-semibold text-gray-400">שולם</span>
                             <div className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        )}
+                        {showMonthHeader && (
+                          <div className="flex items-center gap-2 my-2">
+                            <div className="flex-1 h-px bg-gray-100" />
+                            <span className="text-xs font-medium text-gray-400">
+                              {thisMonth ? new Date(thisMonth + '-01').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }) : 'ללא תאריך'}
+                            </span>
+                            <div className="flex-1 h-px bg-gray-100" />
                           </div>
                         )}
                         <div className={`flex items-center gap-3 p-3 rounded-xl border ${effectiveStatus === 'paid' ? 'bg-green-50 border-green-100' : effectiveStatus === 'overdue' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200'}`}>
